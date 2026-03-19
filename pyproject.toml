@@ -1,6 +1,6 @@
 [project]
 name = "mcp-ynab"
-version = "0.3.0"
+version = "0.4.0"
 description = "MCP server that connects AI assistants to your YNAB budget"
 readme = "README.md"
 license = "AGPL-3.0-only"
