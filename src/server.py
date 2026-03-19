@@ -202,6 +202,46 @@ async def get_transactions_by_payee(
 
 @mcp.tool()
 @handle_errors
+async def search_transactions(
+    budget_id: str,
+    query: str,
+    since_date: str | None = None,
+    amount_min: float | None = None,
+    amount_max: float | None = None,
+) -> str:
+    """Search transactions by text across payee, memo, and category fields.
+
+    Args:
+        budget_id: The budget ID (use list_budgets to find available IDs)
+        query: Text to search for (case-insensitive, matches payee, memo, and category)
+        since_date: Only search transactions on or after this date (YYYY-MM-DD)
+        amount_min: Minimum amount in dollars (e.g. -100.00). Filters by absolute value if both min and max are positive, otherwise by raw value.
+        amount_max: Maximum amount in dollars (e.g. -10.00)
+    """
+    transactions = await cache.get_transactions(budget_id, since_date)
+    q = query.lower()
+
+    matches = []
+    for t in transactions:
+        # Text search across payee, memo, category
+        fields = [t.payee_name or "", t.memo or "", t.category_name or ""]
+        if not any(q in f.lower() for f in fields):
+            continue
+
+        # Amount range filter (in milliunits)
+        if amount_min is not None and t.amount < int(amount_min * 1000):
+            continue
+        if amount_max is not None and t.amount > int(amount_max * 1000):
+            continue
+
+        matches.append(t)
+
+    result = [t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE) for t in matches]
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+@handle_errors
 async def create_transaction(
     budget_id: str,
     account_id: str,
@@ -585,6 +625,65 @@ async def get_money_flow(budget_id: str, month: str = "current") -> str:
         "total_spent": round(total_spent, 2),
         "nodes": nodes,
         "links": links,
+    }
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+@handle_errors
+async def get_spending_by_category(budget_id: str, month: str = "current") -> str:
+    """Get per-category spending breakdown for a month, with budget vs actual comparison.
+
+    Returns categories sorted by spending (highest first), grouped by category group,
+    with budgeted, spent, balance, and percentage of total spending.
+
+    Args:
+        budget_id: The budget ID (use list_budgets to find available IDs)
+        month: Month in YYYY-MM-DD format (first of month, e.g. '2026-03-01') or 'current'
+    """
+    if month == "current":
+        today = date.today()
+        month = today.replace(day=1).strftime("%Y-%m-%d")
+
+    month_detail = await cache.get_month(month, budget_id)
+
+    # Collect categories with non-zero activity, excluding internal groups
+    categories = []
+    total_spent = 0
+    for cat in month_detail.categories:
+        group_name = cat.category_group_name or "Uncategorized"
+        if group_name in MONEY_FLOW_EXCLUDE_GROUPS:
+            continue
+        if cat.activity == 0:
+            continue
+        spent = abs(cat.activity)
+        total_spent += spent
+        categories.append({
+            "group": group_name,
+            "name": cat.name,
+            "budgeted_mu": cat.budgeted,
+            "spent_mu": spent,
+            "balance_mu": cat.balance,
+        })
+
+    # Sort by spending (highest first) and compute percentages
+    categories.sort(key=lambda c: c["spent_mu"], reverse=True)
+    result_cats = []
+    for c in categories:
+        pct = round(c["spent_mu"] / total_spent * 100, 1) if total_spent > 0 else 0.0
+        result_cats.append({
+            "group": c["group"],
+            "name": c["name"],
+            "budgeted": round(c["budgeted_mu"] / 1000, 2),
+            "spent": round(c["spent_mu"] / 1000, 2),
+            "balance": round(c["balance_mu"] / 1000, 2),
+            "pct_of_total": pct,
+        })
+
+    result = {
+        "month": month,
+        "total_spent": round(total_spent / 1000, 2),
+        "categories": result_cats,
     }
     return json.dumps(result, indent=2)
 
