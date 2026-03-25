@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Analytics from '@vercel/analytics/astro';
 
 export interface Props {
   title?: string;
@@ -49,6 +50,7 @@ const ogImage = new URL('/og-image.png', Astro.site ?? Astro.url);
   </head>
   <body class="min-h-screen bg-[#0a0a0a] text-gray-100 antialiased">
     <slot />
+    <Analytics />
 
     <script>
       // Smooth scroll for anchor links
