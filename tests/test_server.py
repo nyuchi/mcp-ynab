@@ -137,7 +137,7 @@ class TestListAccounts:
         result = json.loads(await list_accounts(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["name"] == "Checking"
-        assert "deleted" not in result[0]
+        assert "deleted" in result[0]
 
 
 class TestGetAccount:

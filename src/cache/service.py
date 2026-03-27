@@ -244,6 +244,11 @@ class CacheService:
             lambda bid, **kw: self.client.get_accounts(bid, **kw),
         )
 
+    async def create_account(self, account: dict, plan_id: str) -> Account:
+        acct = await self.client.create_account(account, plan_id)
+        await self.delta.invalidate_knowledge(plan_id, ENDPOINT_ACCOUNTS)
+        return acct
+
     async def get_account(self, account_id: str, plan_id: str) -> Account:
         accounts = await self.get_accounts(plan_id)
         for a in accounts:

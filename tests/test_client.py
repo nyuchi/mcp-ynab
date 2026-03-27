@@ -61,7 +61,7 @@ class TestErrorHandling:
 class TestGetPlans:
     @pytest.mark.asyncio
     async def test_returns_plan_summaries(self, client):
-        data = {"data": {"budgets": [
+        data = {"data": {"plans": [
             {"id": "b1", "name": "My Budget", "last_modified_on": "2026-03-15"},
         ]}}
         client._client = AsyncMock()
@@ -76,7 +76,7 @@ class TestGetPlans:
 class TestGetPlan:
     @pytest.mark.asyncio
     async def test_returns_plan_detail(self, client):
-        data = {"data": {"budget": {
+        data = {"data": {"plan": {
             "id": "b1", "name": "My Budget", "last_modified_on": "2026-03-15",
         }}}
         client._client = AsyncMock()
@@ -326,13 +326,13 @@ class TestGetScheduledTransactions:
 class TestURLConstruction:
     @pytest.mark.asyncio
     async def test_plan_url(self, client):
-        data = {"data": {"budget": {"id": "b1", "name": "Test", "last_modified_on": "2026-01-01"}}}
+        data = {"data": {"plan": {"id": "b1", "name": "Test", "last_modified_on": "2026-01-01"}}}
         client._client = AsyncMock()
         client._client.get = AsyncMock(return_value=_mock_response(data))
 
         await client.get_plan("b1")
         url = client._client.get.call_args[0][0]
-        assert url == "/budgets/b1"
+        assert url == "/plans/b1"
 
     @pytest.mark.asyncio
     async def test_transaction_by_category_url(self, client):
@@ -342,7 +342,7 @@ class TestURLConstruction:
 
         await client.get_transactions_by_category("c1", "b1")
         url = client._client.get.call_args[0][0]
-        assert url == "/budgets/b1/categories/c1/transactions"
+        assert url == "/plans/b1/categories/c1/transactions"
 
     @pytest.mark.asyncio
     async def test_month_category_url(self, client):
@@ -352,7 +352,7 @@ class TestURLConstruction:
 
         await client.get_category_for_month("2026-03-01", "c1", "b1")
         url = client._client.get.call_args[0][0]
-        assert url == "/budgets/b1/months/2026-03-01/categories/c1"
+        assert url == "/plans/b1/months/2026-03-01/categories/c1"
 
 
 # ── User ─────────────────────────────────────────────────────

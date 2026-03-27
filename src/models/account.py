@@ -2,7 +2,7 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
-ACCOUNT_DISPLAY_EXCLUDE = {"deleted"}
+ACCOUNT_DISPLAY_EXCLUDE: set[str] = set()
 
 
 class Account(YNABBaseModel):
@@ -11,7 +11,16 @@ class Account(YNABBaseModel):
     type: str = Field()
     on_budget: bool = Field(default=False)
     closed: bool = Field(default=False)
+    note: str | None = Field(default=None)
     balance: int = Field(default=0)
     cleared_balance: int = Field(default=0)
     uncleared_balance: int = Field(default=0)
+    transfer_payee_id: str | None = Field(default=None)
+    direct_import_linked: bool = Field(default=False)
+    direct_import_in_error: bool = Field(default=False)
+    last_reconciled_at: str | None = Field(default=None)
+    debt_original_balance: int | None = Field(default=None)
+    debt_interest_rates: dict | None = Field(default=None)
+    debt_minimum_payments: dict | None = Field(default=None)
+    debt_escrow_amounts: dict | None = Field(default=None)
     deleted: bool = Field(default=False)

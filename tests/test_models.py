@@ -62,17 +62,14 @@ class TestTransaction:
 
 
 class TestAccount:
-    def test_display_dump_excludes_deleted(self):
+    def test_display_dump_returns_all_fields(self):
         a = Account(id="a1", name="Checking", type="checking", deleted=True)
         result = a.model_dump(by_alias=True, exclude=ACCOUNT_DISPLAY_EXCLUDE)
-        assert "deleted" not in result
-
-    def test_display_dump_expected_keys(self):
-        a = Account(id="a1", name="Checking", type="checking")
-        result = a.model_dump(by_alias=True, exclude=ACCOUNT_DISPLAY_EXCLUDE)
-        expected_keys = {"id", "name", "type", "on_budget", "closed",
-                         "balance", "cleared_balance", "uncleared_balance"}
-        assert set(result.keys()) == expected_keys
+        assert "deleted" in result
+        assert "note" in result
+        assert "transfer_payee_id" in result
+        assert "direct_import_linked" in result
+        assert "debt_interest_rates" in result
 
     def test_roundtrip_preserves_deleted(self):
         a = Account(id="a1", name="Checking", type="checking", deleted=True)

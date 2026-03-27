@@ -96,15 +96,15 @@ class YNABClient:
     # ── Budgets ──────────────────────────────────────────────
 
     async def get_plans(self) -> list[PlanSummary]:
-        data = await self._get("/budgets")
-        return [PlanSummary.model_validate(b) for b in data["data"]["budgets"]]
+        data = await self._get("/plans")
+        return [PlanSummary.model_validate(b) for b in data["data"]["plans"]]
 
     async def get_plan(self, plan_id: str) -> PlanDetail:
-        data = await self._get(f"/budgets/{plan_id}")
-        return PlanDetail.model_validate(data["data"]["budget"])
+        data = await self._get(f"/plans/{plan_id}")
+        return PlanDetail.model_validate(data["data"]["plan"])
 
     async def get_plan_settings(self, plan_id: str) -> PlanSettings:
-        data = await self._get(f"/budgets/{plan_id}/settings")
+        data = await self._get(f"/plans/{plan_id}/settings")
         return PlanSettings.model_validate(data["data"]["settings"])
 
     # ── Accounts ─────────────────────────────────────────────
@@ -113,13 +113,20 @@ class YNABClient:
         self, plan_id: str, *, last_knowledge_of_server: int | None = None
     ) -> tuple[list[Account], int]:
         params = self._add_knowledge(None, last_knowledge_of_server)
-        data = await self._get(f"/budgets/{plan_id}/accounts", params=params)
+        data = await self._get(f"/plans/{plan_id}/accounts", params=params)
         accounts = [Account.model_validate(a) for a in data["data"]["accounts"]]
         knowledge = data["data"]["server_knowledge"]
         return accounts, knowledge
 
+    async def create_account(self, account: dict, plan_id: str) -> Account:
+        data = await self._post(
+            f"/plans/{plan_id}/accounts",
+            json={"account": account},
+        )
+        return Account.model_validate(data["data"]["account"])
+
     async def get_account(self, account_id: str, plan_id: str) -> Account:
-        data = await self._get(f"/budgets/{plan_id}/accounts/{account_id}")
+        data = await self._get(f"/plans/{plan_id}/accounts/{account_id}")
         return Account.model_validate(data["data"]["account"])
 
     # ── Transactions ─────────────────────────────────────────
@@ -138,13 +145,13 @@ class YNABClient:
         if type:
             params["type"] = type
         params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
-        data = await self._get(f"/budgets/{plan_id}/transactions", params=params or None)
+        data = await self._get(f"/plans/{plan_id}/transactions", params=params or None)
         txns = [Transaction.model_validate(t) for t in data["data"]["transactions"]]
         knowledge = data["data"]["server_knowledge"]
         return txns, knowledge
 
     async def get_transaction(self, transaction_id: str, plan_id: str) -> Transaction:
-        data = await self._get(f"/budgets/{plan_id}/transactions/{transaction_id}")
+        data = await self._get(f"/plans/{plan_id}/transactions/{transaction_id}")
         return Transaction.model_validate(data["data"]["transaction"])
 
     async def get_transactions_by_account(
@@ -160,7 +167,7 @@ class YNABClient:
             params["since_date"] = since_date
         params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
         data = await self._get(
-            f"/budgets/{plan_id}/accounts/{account_id}/transactions",
+            f"/plans/{plan_id}/accounts/{account_id}/transactions",
             params=params or None,
         )
         txns = [Transaction.model_validate(t) for t in data["data"]["transactions"]]
@@ -180,7 +187,7 @@ class YNABClient:
             params["since_date"] = since_date
         params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
         data = await self._get(
-            f"/budgets/{plan_id}/categories/{category_id}/transactions",
+            f"/plans/{plan_id}/categories/{category_id}/transactions",
             params=params or None,
         )
         txns = [Transaction.model_validate(t) for t in data["data"]["transactions"]]
@@ -200,7 +207,7 @@ class YNABClient:
             params["since_date"] = since_date
         params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
         data = await self._get(
-            f"/budgets/{plan_id}/payees/{payee_id}/transactions",
+            f"/plans/{plan_id}/payees/{payee_id}/transactions",
             params=params or None,
         )
         txns = [Transaction.model_validate(t) for t in data["data"]["transactions"]]
@@ -209,7 +216,7 @@ class YNABClient:
 
     async def create_transaction(self, transaction: dict, plan_id: str) -> Transaction:
         data = await self._post(
-            f"/budgets/{plan_id}/transactions",
+            f"/plans/{plan_id}/transactions",
             json={"transaction": transaction},
         )
         return Transaction.model_validate(data["data"]["transaction"])
@@ -218,7 +225,7 @@ class YNABClient:
         self, transactions: list[dict], plan_id: str
     ) -> list[Transaction]:
         data = await self._post(
-            f"/budgets/{plan_id}/transactions",
+            f"/plans/{plan_id}/transactions",
             json={"transactions": transactions},
         )
         return [
@@ -229,7 +236,7 @@ class YNABClient:
         self, transaction_id: str, transaction: dict, plan_id: str
     ) -> Transaction:
         data = await self._put(
-            f"/budgets/{plan_id}/transactions/{transaction_id}",
+            f"/plans/{plan_id}/transactions/{transaction_id}",
             json={"transaction": transaction},
         )
         return Transaction.model_validate(data["data"]["transaction"])
@@ -238,7 +245,7 @@ class YNABClient:
         self, transactions: list[dict], plan_id: str
     ) -> list[Transaction]:
         data = await self._patch(
-            f"/budgets/{plan_id}/transactions",
+            f"/plans/{plan_id}/transactions",
             json={"transactions": transactions},
         )
         return [
@@ -246,7 +253,7 @@ class YNABClient:
         ]
 
     async def delete_transaction(self, transaction_id: str, plan_id: str) -> Transaction:
-        data = await self._delete(f"/budgets/{plan_id}/transactions/{transaction_id}")
+        data = await self._delete(f"/plans/{plan_id}/transactions/{transaction_id}")
         return Transaction.model_validate(data["data"]["transaction"])
 
     # ── Categories ───────────────────────────────────────────
@@ -255,27 +262,27 @@ class YNABClient:
         self, plan_id: str, *, last_knowledge_of_server: int | None = None
     ) -> tuple[list[CategoryGroup], int]:
         params = self._add_knowledge(None, last_knowledge_of_server)
-        data = await self._get(f"/budgets/{plan_id}/categories", params=params)
+        data = await self._get(f"/plans/{plan_id}/categories", params=params)
         groups = [CategoryGroup.model_validate(g) for g in data["data"]["category_groups"]]
         knowledge = data["data"]["server_knowledge"]
         return groups, knowledge
 
     async def create_category(self, category: dict, plan_id: str) -> Category:
         data = await self._post(
-            f"/budgets/{plan_id}/categories",
+            f"/plans/{plan_id}/categories",
             json={"category": category},
         )
         return Category.model_validate(data["data"]["category"])
 
     async def get_category(self, category_id: str, plan_id: str) -> Category:
-        data = await self._get(f"/budgets/{plan_id}/categories/{category_id}")
+        data = await self._get(f"/plans/{plan_id}/categories/{category_id}")
         return Category.model_validate(data["data"]["category"])
 
     async def update_category(
         self, category_id: str, category: dict, plan_id: str
     ) -> Category:
         data = await self._patch(
-            f"/budgets/{plan_id}/categories/{category_id}",
+            f"/plans/{plan_id}/categories/{category_id}",
             json={"category": category},
         )
         return Category.model_validate(data["data"]["category"])
@@ -284,14 +291,14 @@ class YNABClient:
         self, category_group_id: str, category_group: dict, plan_id: str
     ) -> CategoryGroup:
         data = await self._patch(
-            f"/budgets/{plan_id}/categories/groups/{category_group_id}",
+            f"/plans/{plan_id}/categories/groups/{category_group_id}",
             json={"category_group": category_group},
         )
         return CategoryGroup.model_validate(data["data"]["category_group"])
 
     async def create_category_group(self, category_group: dict, plan_id: str) -> CategoryGroup:
         data = await self._post(
-            f"/budgets/{plan_id}/categories/groups",
+            f"/plans/{plan_id}/categories/groups",
             json={"category_group": category_group},
         )
         return CategoryGroup.model_validate(data["data"]["category_group"])
@@ -300,7 +307,7 @@ class YNABClient:
         self, month: str, category_id: str, plan_id: str
     ) -> Category:
         data = await self._get(
-            f"/budgets/{plan_id}/months/{month}/categories/{category_id}"
+            f"/plans/{plan_id}/months/{month}/categories/{category_id}"
         )
         return Category.model_validate(data["data"]["category"])
 
@@ -308,7 +315,7 @@ class YNABClient:
         self, month: str, category_id: str, budgeted: int, plan_id: str
     ) -> Category:
         data = await self._patch(
-            f"/budgets/{plan_id}/months/{month}/categories/{category_id}",
+            f"/plans/{plan_id}/months/{month}/categories/{category_id}",
             json={"category": {"budgeted": budgeted}},
         )
         return Category.model_validate(data["data"]["category"])
@@ -319,13 +326,13 @@ class YNABClient:
         self, plan_id: str, *, last_knowledge_of_server: int | None = None
     ) -> tuple[list[Payee], int]:
         params = self._add_knowledge(None, last_knowledge_of_server)
-        data = await self._get(f"/budgets/{plan_id}/payees", params=params)
+        data = await self._get(f"/plans/{plan_id}/payees", params=params)
         payees = [Payee.model_validate(p) for p in data["data"]["payees"]]
         knowledge = data["data"]["server_knowledge"]
         return payees, knowledge
 
     async def get_payee(self, payee_id: str, plan_id: str) -> Payee:
-        data = await self._get(f"/budgets/{plan_id}/payees/{payee_id}")
+        data = await self._get(f"/plans/{plan_id}/payees/{payee_id}")
         return Payee.model_validate(data["data"]["payee"])
 
     # ── Months ───────────────────────────────────────────────
@@ -334,19 +341,19 @@ class YNABClient:
         self, plan_id: str, *, last_knowledge_of_server: int | None = None
     ) -> tuple[list[MonthSummary], int]:
         params = self._add_knowledge(None, last_knowledge_of_server)
-        data = await self._get(f"/budgets/{plan_id}/months", params=params)
+        data = await self._get(f"/plans/{plan_id}/months", params=params)
         months = [MonthSummary.model_validate(m) for m in data["data"]["months"]]
         knowledge = data["data"]["server_knowledge"]
         return months, knowledge
 
     async def get_month(self, month: str, plan_id: str) -> MonthDetail:
-        data = await self._get(f"/budgets/{plan_id}/months/{month}")
+        data = await self._get(f"/plans/{plan_id}/months/{month}")
         return MonthDetail.model_validate(data["data"]["month"])
 
     # ── Scheduled Transactions ───────────────────────────────
 
     async def get_scheduled_transactions(self, plan_id: str) -> list[ScheduledTransaction]:
-        data = await self._get(f"/budgets/{plan_id}/scheduled_transactions")
+        data = await self._get(f"/plans/{plan_id}/scheduled_transactions")
         return [
             ScheduledTransaction.model_validate(t)
             for t in data["data"]["scheduled_transactions"]
@@ -356,7 +363,7 @@ class YNABClient:
         self, transaction_id: str, plan_id: str
     ) -> ScheduledTransaction:
         data = await self._get(
-            f"/budgets/{plan_id}/scheduled_transactions/{transaction_id}"
+            f"/plans/{plan_id}/scheduled_transactions/{transaction_id}"
         )
         return ScheduledTransaction.model_validate(data["data"]["scheduled_transaction"])
 
