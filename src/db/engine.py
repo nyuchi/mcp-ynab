@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy import event
+from sqlalchemy import event, inspect, text
 
 from src.db.tables import Base
 
@@ -22,7 +22,17 @@ async def init_db(db_path: str) -> None:
 
     event.listen(_engine.sync_engine, "connect", _set_wal_mode)
 
+    # Migrate: drop tables with old budget_id column — cache rebuilds automatically
     async with _engine.begin() as conn:
+        def _migrate_budget_to_plan(connection):
+            insp = inspect(connection)
+            for table in ("cached_entities", "server_knowledge"):
+                if insp.has_table(table):
+                    columns = [c["name"] for c in insp.get_columns(table)]
+                    if "budget_id" in columns:
+                        connection.execute(text(f"DROP TABLE {table}"))
+
+        await conn.run_sync(_migrate_budget_to_plan)
         await conn.run_sync(Base.metadata.create_all)
 
     _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
