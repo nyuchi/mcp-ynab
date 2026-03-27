@@ -12,6 +12,7 @@ from src.models import (
     Payee,
     ScheduledTransaction,
     Transaction,
+    User,
 )
 
 
@@ -84,6 +85,12 @@ class YNABClient:
             params = params or {}
             params["last_knowledge_of_server"] = knowledge
         return params
+
+    # ── User ─────────────────────────────────────────────────
+
+    async def get_user(self) -> User:
+        data = await self._get("/user")
+        return User.model_validate(data["data"]["user"])
 
     # ── Budgets ──────────────────────────────────────────────
 

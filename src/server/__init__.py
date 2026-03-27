@@ -1,6 +1,7 @@
 from src.server._shared import mcp
 
 # Import domain modules to trigger @mcp.tool() registration
+from src.server.user import get_user  # noqa: F401
 from src.server.budgets import list_budgets, get_budget  # noqa: F401
 from src.server.accounts import list_accounts, get_account  # noqa: F401
 from src.server.transactions import (  # noqa: F401

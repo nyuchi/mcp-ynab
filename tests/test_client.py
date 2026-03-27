@@ -353,3 +353,27 @@ class TestURLConstruction:
         await client.get_category_for_month("2026-03-01", "c1", "b1")
         url = client._client.get.call_args[0][0]
         assert url == "/budgets/b1/months/2026-03-01/categories/c1"
+
+
+# ── User ─────────────────────────────────────────────────────
+
+
+class TestGetUser:
+    @pytest.mark.asyncio
+    async def test_returns_user(self, client):
+        data = {"data": {"user": {"id": "user-123"}}}
+        client._client = AsyncMock()
+        client._client.get = AsyncMock(return_value=_mock_response(data))
+
+        result = await client.get_user()
+        assert result.id == "user-123"
+
+    @pytest.mark.asyncio
+    async def test_user_url(self, client):
+        data = {"data": {"user": {"id": "user-123"}}}
+        client._client = AsyncMock()
+        client._client.get = AsyncMock(return_value=_mock_response(data))
+
+        await client.get_user()
+        url = client._client.get.call_args[0][0]
+        assert url == "/user"

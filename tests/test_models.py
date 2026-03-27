@@ -187,3 +187,17 @@ class TestScheduledTransaction:
         for excluded in ["deleted", "account_id", "payee_id", "category_id",
                          "date_first", "flag_color", "flag_name", "subtransactions"]:
             assert excluded not in result
+
+
+class TestUser:
+    def test_roundtrip(self):
+        from src.models.user import User
+        u = User(id="user-123")
+        raw = u.model_dump()
+        u2 = User.model_validate(raw)
+        assert u2.id == "user-123"
+
+    def test_from_api_response(self):
+        from src.models.user import User
+        u = User.model_validate({"id": "abc-def-ghi"})
+        assert u.id == "abc-def-ghi"

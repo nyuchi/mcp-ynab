@@ -19,6 +19,7 @@ from src.models import (
     Payee,
     ScheduledTransaction,
     Transaction,
+    User,
 )
 
 
@@ -712,3 +713,16 @@ class TestHandleErrors:
         mock_cache.get_budgets = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
         result = json.loads(await list_budgets())
         assert "Request failed" in result["error"]
+
+
+# ── User Tools ───────────────────────────────────────────────
+
+
+class TestGetUser:
+    @pytest.mark.asyncio
+    async def test_returns_user(self, mock_cache):
+        from src.server import get_user
+
+        mock_cache.get_user = AsyncMock(return_value=User(id="user-123"))
+        result = json.loads(await get_user())
+        assert result["id"] == "user-123"

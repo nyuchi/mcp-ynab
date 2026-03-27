@@ -19,6 +19,7 @@ from src.models import (
     Payee,
     ScheduledTransaction,
     Transaction,
+    User,
 )
 from src.models.common import YNABBaseModel
 from src.ynab_client import YNABClient
@@ -173,6 +174,21 @@ class CacheService:
                 raise
 
     # ── Public API ───────────────────────────────────────────
+
+    # User (TTL cached)
+
+    async def get_user(self) -> User:
+        cache_key = "user"
+        ttl = self.settings.ttl_budgets
+        cached = await self._get_cached_model(cache_key, ttl, User)
+        if cached is not None:
+            return cached
+
+        user = await self.retry.execute(
+            self.client.get_user, cache_key=cache_key,
+        )
+        await self._set_cached_model(cache_key, user, ttl)
+        return user
 
     # Budgets (TTL cached, no delta)
 
