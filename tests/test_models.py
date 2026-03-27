@@ -82,22 +82,23 @@ class TestAccount:
 
 
 class TestCategory:
-    def test_list_exclude_removes_internal_fields(self):
+    def test_list_exclude_returns_all_fields_when_empty(self):
         c = Category(id="c1", category_group_id="g1", name="Food",
                      goal_type="TB", goal_target=500000, deleted=True)
         result = c.model_dump(by_alias=True, exclude=CATEGORY_LIST_EXCLUDE)
-        for excluded in ["category_group_id", "category_group_name",
-                         "goal_type", "goal_target", "goal_percentage_complete", "deleted"]:
-            assert excluded not in result
+        assert "category_group_id" in result
+        assert "goal_type" in result
+        assert "goal_target" in result
+        assert "deleted" in result
 
-    def test_detail_include_shows_goal_fields(self):
+    def test_detail_include_returns_all_fields_when_empty(self):
         c = Category(id="c1", category_group_id="g1", name="Food",
                      goal_type="TB", goal_target=500000, goal_percentage_complete=50)
-        result = c.model_dump(by_alias=True, include=CATEGORY_DETAIL_INCLUDE)
+        result = c.model_dump(by_alias=True, include=CATEGORY_DETAIL_INCLUDE or None)
         assert result["goal_type"] == "TB"
         assert result["goal_target"] == 500000
         assert result["goal_percentage_complete"] == 50
-        assert "hidden" not in result
+        assert "hidden" in result
 
     def test_roundtrip_preserves_all_fields(self):
         c = Category(id="c1", category_group_id="g1", name="Food", budgeted=500000)

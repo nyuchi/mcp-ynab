@@ -245,7 +245,7 @@ class TestUpdateCategoryBudget:
         client._client = AsyncMock()
         client._client.patch = AsyncMock(return_value=_mock_response(data))
 
-        result = await client.update_category_budget("2026-03-01", "c1", 500000, "b1")
+        result = await client.update_category_for_month("2026-03-01", "c1", 500000, "b1")
         assert result.budgeted == 500000
 
         patch_call = client._client.patch.call_args

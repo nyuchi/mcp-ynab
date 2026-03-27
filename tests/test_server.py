@@ -76,12 +76,12 @@ def _make_scheduled_transaction(**overrides) -> ScheduledTransaction:
     return ScheduledTransaction(**{**defaults, **overrides})
 
 
-# We need to patch the module-level objects in server.py.
-# The server module creates `cache` and `client` at import time,
-# so we patch `src.server.cache` (the CacheService instance).
+# We need to patch the module-level objects in server/_shared.py.
+# The server package creates `cache` and `client` at import time,
+# so we patch `src.server._shared.cache` (the CacheService instance).
 
-CACHE_PATH = "src.server.cache"
-DB_PATH = "src.server._ensure_db"
+CACHE_PATH = "src.server._shared.cache"
+DB_PATH = "src.server._shared._ensure_db"
 
 
 @pytest.fixture
@@ -409,13 +409,13 @@ class TestGetCategoryForMonth:
 class TestUpdateCategoryBudget:
     @pytest.mark.asyncio
     async def test_converts_dollars_to_milliunits(self, mock_cache):
-        from src.server import update_category_budget
+        from src.server import update_category_for_month
 
-        mock_cache.update_category_budget = AsyncMock(return_value=_make_category(budgeted=500000))
-        await update_category_budget(
+        mock_cache.update_category_for_month = AsyncMock(return_value=_make_category(budgeted=500000))
+        await update_category_for_month(
             category_id="cat-1", month="2026-03-01", budgeted=500.00, budget_id="bud-1"
         )
-        call_args = mock_cache.update_category_budget.call_args
+        call_args = mock_cache.update_category_for_month.call_args
         assert call_args[0][2] == 500000  # third positional arg is budgeted in milliunits
 
 

@@ -251,9 +251,41 @@ class YNABClient:
         knowledge = data["data"]["server_knowledge"]
         return groups, knowledge
 
+    async def create_category(self, category: dict, budget_id: str) -> Category:
+        data = await self._post(
+            f"/budgets/{budget_id}/categories",
+            json={"category": category},
+        )
+        return Category.model_validate(data["data"]["category"])
+
     async def get_category(self, category_id: str, budget_id: str) -> Category:
         data = await self._get(f"/budgets/{budget_id}/categories/{category_id}")
         return Category.model_validate(data["data"]["category"])
+
+    async def update_category(
+        self, category_id: str, category: dict, budget_id: str
+    ) -> Category:
+        data = await self._patch(
+            f"/budgets/{budget_id}/categories/{category_id}",
+            json={"category": category},
+        )
+        return Category.model_validate(data["data"]["category"])
+
+    async def update_category_group(
+        self, category_group_id: str, category_group: dict, budget_id: str
+    ) -> CategoryGroup:
+        data = await self._patch(
+            f"/budgets/{budget_id}/categories/groups/{category_group_id}",
+            json={"category_group": category_group},
+        )
+        return CategoryGroup.model_validate(data["data"]["category_group"])
+
+    async def create_category_group(self, category_group: dict, budget_id: str) -> CategoryGroup:
+        data = await self._post(
+            f"/budgets/{budget_id}/categories/groups",
+            json={"category_group": category_group},
+        )
+        return CategoryGroup.model_validate(data["data"]["category_group"])
 
     async def get_category_for_month(
         self, month: str, category_id: str, budget_id: str
@@ -263,7 +295,7 @@ class YNABClient:
         )
         return Category.model_validate(data["data"]["category"])
 
-    async def update_category_budget(
+    async def update_category_for_month(
         self, month: str, category_id: str, budgeted: int, budget_id: str
     ) -> Category:
         data = await self._patch(

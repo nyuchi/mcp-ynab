@@ -25,6 +25,21 @@ from src.ynab_client import YNABClient
 
 logger = logging.getLogger(__name__)
 
+# Delta sync endpoint keys (used for server_knowledge tracking and invalidation)
+ENDPOINT_ACCOUNTS = "accounts"
+ENDPOINT_TRANSACTIONS = "transactions"
+ENDPOINT_CATEGORIES = "categories"
+ENDPOINT_PAYEES = "payees"
+ENDPOINT_MONTHS = "months"
+
+# Delta sync entity type keys (used for entity storage)
+ENTITY_ACCOUNT = "account"
+ENTITY_TRANSACTION = "transaction"
+ENTITY_CATEGORY = "category"
+ENTITY_CATEGORY_GROUP = "category_group"
+ENTITY_PAYEE = "payee"
+ENTITY_MONTH = "month"
+
 
 class CacheService:
     def __init__(self, client: YNABClient, settings: Settings):
@@ -124,7 +139,7 @@ class CacheService:
 
     async def _delta_sync_categories(self, budget_id: str) -> None:
         """Sync both category groups and categories via delta."""
-        endpoint = "categories"
+        endpoint = ENDPOINT_CATEGORIES
         if not await self.delta.should_sync(budget_id, endpoint):
             return
 
@@ -148,8 +163,8 @@ class CacheService:
                     deleted=group.deleted, categories=[],
                 ))
 
-            await self.delta.upsert_entities(budget_id, "category_group", flat_groups)
-            await self.delta.upsert_entities(budget_id, "category", flat_cats)
+            await self.delta.upsert_entities(budget_id, ENTITY_CATEGORY_GROUP, flat_groups)
+            await self.delta.upsert_entities(budget_id, ENTITY_CATEGORY, flat_cats)
             await self.delta.update_knowledge(budget_id, endpoint, new_knowledge)
         except Exception:
             if await self.delta.has_cached_data(budget_id, endpoint):
@@ -191,7 +206,7 @@ class CacheService:
 
     async def get_accounts(self, budget_id: str) -> list[Account]:
         return await self._delta_sync(
-            budget_id, "accounts", "account", Account,
+            budget_id, ENDPOINT_ACCOUNTS, ENTITY_ACCOUNT, Account,
             lambda bid, **kw: self.client.get_accounts(bid, **kw),
         )
 
@@ -216,7 +231,7 @@ class CacheService:
 
     async def _sync_transactions(self, budget_id: str) -> list[Transaction]:
         return await self._delta_sync(
-            budget_id, "transactions", "transaction", Transaction,
+            budget_id, ENDPOINT_TRANSACTIONS, ENTITY_TRANSACTION, Transaction,
             lambda bid, **kw: self.client.get_transactions(bid, **kw),
         )
 
@@ -292,33 +307,33 @@ class CacheService:
 
     async def create_transaction(self, transaction: dict, budget_id: str) -> Transaction:
         txn = await self.client.create_transaction(transaction, budget_id)
-        await self.delta.upsert_entities(budget_id, "transaction", [txn])
+        await self.delta.upsert_entities(budget_id, ENTITY_TRANSACTION, [txn])
         return txn
 
     async def create_transactions(
         self, transactions: list[dict], budget_id: str
     ) -> list[Transaction]:
         txns = await self.client.create_transactions(transactions, budget_id)
-        await self.delta.upsert_entities(budget_id, "transaction", txns)
+        await self.delta.upsert_entities(budget_id, ENTITY_TRANSACTION, txns)
         return txns
 
     async def update_transaction(
         self, transaction_id: str, transaction: dict, budget_id: str
     ) -> Transaction:
         txn = await self.client.update_transaction(transaction_id, transaction, budget_id)
-        await self.delta.upsert_entities(budget_id, "transaction", [txn])
+        await self.delta.upsert_entities(budget_id, ENTITY_TRANSACTION, [txn])
         return txn
 
     async def update_transactions(
         self, transactions: list[dict], budget_id: str
     ) -> list[Transaction]:
         txns = await self.client.update_transactions(transactions, budget_id)
-        await self.delta.upsert_entities(budget_id, "transaction", txns)
+        await self.delta.upsert_entities(budget_id, ENTITY_TRANSACTION, txns)
         return txns
 
     async def delete_transaction(self, transaction_id: str, budget_id: str) -> Transaction:
         txn = await self.client.delete_transaction(transaction_id, budget_id)
-        await self.delta.upsert_entities(budget_id, "transaction", [txn])
+        await self.delta.upsert_entities(budget_id, ENTITY_TRANSACTION, [txn])
         return txn
 
     # Categories (delta synced)
@@ -326,8 +341,8 @@ class CacheService:
     async def get_categories(self, budget_id: str) -> list[CategoryGroup]:
         await self._delta_sync_categories(budget_id)
 
-        groups = await self.delta.get_cached_entities(budget_id, "category_group", CategoryGroup)
-        cats = await self.delta.get_cached_entities(budget_id, "category", Category)
+        groups = await self.delta.get_cached_entities(budget_id, ENTITY_CATEGORY_GROUP, CategoryGroup)
+        cats = await self.delta.get_cached_entities(budget_id, ENTITY_CATEGORY, Category)
 
         # Reconstruct nested structure
         groups_by_id: dict[str, CategoryGroup] = {g.id: g for g in groups}
@@ -353,19 +368,63 @@ class CacheService:
         await self._set_cached_model(cache_key, cat, self.settings.ttl_month_detail)
         return cat
 
-    async def update_category_budget(
+    async def get_category(self, category_id: str, budget_id: str) -> Category:
+        groups = await self.get_categories(budget_id)
+        for g in groups:
+            for c in g.categories:
+                if c.id == category_id:
+                    return c
+        # Fallback to direct API
+        cache_key = f"category:{budget_id}:{category_id}"
+        cached = await self._get_cached_model(cache_key, self.settings.ttl_single_entity, Category)
+        if cached is not None:
+            return cached
+
+        cat = await self.retry.execute(
+            lambda: self.client.get_category(category_id, budget_id), cache_key=cache_key,
+        )
+        await self._set_cached_model(cache_key, cat, self.settings.ttl_single_entity)
+        return cat
+
+    async def create_category(self, category: dict, budget_id: str) -> Category:
+        cat = await self.client.create_category(category, budget_id)
+        await self.delta.invalidate_knowledge(budget_id, ENDPOINT_CATEGORIES)
+        return cat
+
+    async def update_category_group(
+        self, category_group_id: str, category_group: dict, budget_id: str
+    ) -> CategoryGroup:
+        group = await self.client.update_category_group(category_group_id, category_group, budget_id)
+        await self.delta.invalidate_knowledge(budget_id, ENDPOINT_CATEGORIES)
+        return group
+
+    async def create_category_group(
+        self, category_group: dict, budget_id: str
+    ) -> CategoryGroup:
+        group = await self.client.create_category_group(category_group, budget_id)
+        await self.delta.invalidate_knowledge(budget_id, ENDPOINT_CATEGORIES)
+        return group
+
+    async def update_category(
+        self, category_id: str, category: dict, budget_id: str
+    ) -> Category:
+        cat = await self.client.update_category(category_id, category, budget_id)
+        await self.delta.invalidate_knowledge(budget_id, ENDPOINT_CATEGORIES)
+        return cat
+
+    async def update_category_for_month(
         self, month: str, category_id: str, budgeted: int, budget_id: str
     ) -> Category:
-        cat = await self.client.update_category_budget(month, category_id, budgeted, budget_id)
-        await self.delta.invalidate_knowledge(budget_id, "categories")
-        await self.delta.invalidate_knowledge(budget_id, "months")
+        cat = await self.client.update_category_for_month(month, category_id, budgeted, budget_id)
+        await self.delta.invalidate_knowledge(budget_id, ENDPOINT_CATEGORIES)
+        await self.delta.invalidate_knowledge(budget_id, ENDPOINT_MONTHS)
         return cat
 
     # Payees (delta synced)
 
     async def get_payees(self, budget_id: str) -> list[Payee]:
         return await self._delta_sync(
-            budget_id, "payees", "payee", Payee,
+            budget_id, ENDPOINT_PAYEES, ENTITY_PAYEE, Payee,
             lambda bid, **kw: self.client.get_payees(bid, **kw),
         )
 
@@ -373,7 +432,7 @@ class CacheService:
 
     async def get_months(self, budget_id: str) -> list[MonthSummary]:
         return await self._delta_sync(
-            budget_id, "months", "month", MonthSummary,
+            budget_id, ENDPOINT_MONTHS, ENTITY_MONTH, MonthSummary,
             lambda bid, **kw: self.client.get_months(bid, **kw),
         )
 
