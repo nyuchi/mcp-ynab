@@ -44,7 +44,7 @@ class TestErrorHandling:
         client._client.get = AsyncMock(return_value=response)
 
         with pytest.raises(YNABError) as exc_info:
-            await client.get_budgets()
+            await client.get_plans()
 
         assert exc_info.value.status_code == 404
         assert exc_info.value.error_id == "not_found"
@@ -55,34 +55,34 @@ class TestErrorHandling:
         assert client._client.headers["Authorization"] == "Bearer test-key"
 
 
-# ── Budgets ───────────────────────────────────────────────────
+# ── Plans ───────────────────────────────────────────────────
 
 
-class TestGetBudgets:
+class TestGetPlans:
     @pytest.mark.asyncio
-    async def test_returns_budget_summaries(self, client):
+    async def test_returns_plan_summaries(self, client):
         data = {"data": {"budgets": [
             {"id": "b1", "name": "My Budget", "last_modified_on": "2026-03-15"},
         ]}}
         client._client = AsyncMock()
         client._client.get = AsyncMock(return_value=_mock_response(data))
 
-        result = await client.get_budgets()
+        result = await client.get_plans()
         assert len(result) == 1
         assert result[0].id == "b1"
         assert result[0].name == "My Budget"
 
 
-class TestGetBudget:
+class TestGetPlan:
     @pytest.mark.asyncio
-    async def test_returns_budget_detail(self, client):
+    async def test_returns_plan_detail(self, client):
         data = {"data": {"budget": {
             "id": "b1", "name": "My Budget", "last_modified_on": "2026-03-15",
         }}}
         client._client = AsyncMock()
         client._client.get = AsyncMock(return_value=_mock_response(data))
 
-        result = await client.get_budget("b1")
+        result = await client.get_plan("b1")
         assert result.id == "b1"
 
 
@@ -236,9 +236,9 @@ class TestGetCategories:
         assert knowledge == 5
 
 
-class TestUpdateCategoryBudget:
+class TestUpdateCategoryForMonth:
     @pytest.mark.asyncio
-    async def test_updates_budget(self, client):
+    async def test_updates_category_for_month(self, client):
         data = {"data": {"category": {
             "id": "c1", "category_group_id": "g1", "name": "Rent", "budgeted": 500000,
         }}}
@@ -325,12 +325,12 @@ class TestGetScheduledTransactions:
 
 class TestURLConstruction:
     @pytest.mark.asyncio
-    async def test_budget_url(self, client):
+    async def test_plan_url(self, client):
         data = {"data": {"budget": {"id": "b1", "name": "Test", "last_modified_on": "2026-01-01"}}}
         client._client = AsyncMock()
         client._client.get = AsyncMock(return_value=_mock_response(data))
 
-        await client.get_budget("b1")
+        await client.get_plan("b1")
         url = client._client.get.call_args[0][0]
         assert url == "/budgets/b1"
 

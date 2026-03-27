@@ -1,7 +1,7 @@
 from src.models import (
     Account,
-    BudgetDetail,
-    BudgetSummary,
+    PlanDetail,
+    PlanSummary,
     Category,
     CategoryGroup,
     MonthDetail,
@@ -11,7 +11,7 @@ from src.models import (
     Transaction,
 )
 from src.models.account import ACCOUNT_DISPLAY_EXCLUDE
-from src.models.budget import BUDGET_SUMMARY_DISPLAY_EXCLUDE
+from src.models.plan import PLAN_SUMMARY_DISPLAY_EXCLUDE
 from src.models.category import CATEGORY_DETAIL_INCLUDE, CATEGORY_LIST_EXCLUDE
 from src.models.month import MONTH_DISPLAY_EXCLUDE
 from src.models.payee import PAYEE_DISPLAY_EXCLUDE
@@ -122,19 +122,21 @@ class TestCategoryGroup:
         assert result["categories"][0]["name"] == "Food"
 
 
-class TestBudgetSummary:
-    def test_display_dump_only_id_and_name(self):
-        b = BudgetSummary(id="b1", name="My Budget", last_modified_on="2026-03-15")
-        result = b.model_dump(by_alias=True, exclude=BUDGET_SUMMARY_DISPLAY_EXCLUDE)
-        assert result == {"id": "b1", "name": "My Budget"}
+class TestPlanSummary:
+    def test_display_dump_returns_all_fields(self):
+        b = PlanSummary(id="b1", name="My Budget", last_modified_on="2026-03-15")
+        result = b.model_dump(by_alias=True, exclude=PLAN_SUMMARY_DISPLAY_EXCLUDE)
+        assert result["id"] == "b1"
+        assert result["name"] == "My Budget"
+        assert result["last_modified_on"] == "2026-03-15"
 
 
-class TestBudgetDetail:
-    def test_display_dump_aliases_last_modified(self):
-        b = BudgetDetail(id="b1", name="My Budget", last_modified_on="2026-03-15")
+class TestPlanDetail:
+    def test_roundtrip(self):
+        b = PlanDetail(id="b1", name="My Budget", last_modified_on="2026-03-15")
         result = b.model_dump(by_alias=True)
-        assert result["last_modified"] == "2026-03-15"
-        assert "last_modified_on" not in result
+        assert result["id"] == "b1"
+        assert result["last_modified_on"] == "2026-03-15"
 
 
 class TestPayee:

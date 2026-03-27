@@ -10,8 +10,8 @@ import pytest
 
 from src.models import (
     Account,
-    BudgetDetail,
-    BudgetSummary,
+    PlanDetail,
+    PlanSummary,
     Category,
     CategoryGroup,
     MonthDetail,
@@ -36,14 +36,14 @@ def _make_account(**overrides) -> Account:
     return Account(**{**defaults, **overrides})
 
 
-def _make_budget_summary(**overrides) -> BudgetSummary:
-    defaults = {"id": "bud-1", "name": "My Budget", "last_modified_on": "2026-03-15"}
-    return BudgetSummary(**{**defaults, **overrides})
+def _make_plan_summary(**overrides) -> PlanSummary:
+    defaults = {"id": "bud-1", "name": "My Plan", "last_modified_on": "2026-03-15"}
+    return PlanSummary(**{**defaults, **overrides})
 
 
-def _make_budget_detail(**overrides) -> BudgetDetail:
-    defaults = {"id": "bud-1", "name": "My Budget", "last_modified_on": "2026-03-15"}
-    return BudgetDetail(**{**defaults, **overrides})
+def _make_plan_detail(**overrides) -> PlanDetail:
+    defaults = {"id": "bud-1", "name": "My Plan", "last_modified_on": "2026-03-15"}
+    return PlanDetail(**{**defaults, **overrides})
 
 
 def _make_category(**overrides) -> Category:
@@ -91,38 +91,38 @@ def mock_cache():
         yield mock
 
 
-# ── Budget Tools ──────────────────────────────────────────────
+# ── Plan Tools ──────────────────────────────────────────────
 
 
-class TestListBudgets:
+class TestListPlans:
     @pytest.mark.asyncio
-    async def test_returns_budgets(self, mock_cache):
-        from src.server import list_budgets
+    async def test_returns_plans(self, mock_cache):
+        from src.server import list_plans
 
-        mock_cache.get_budgets = AsyncMock(return_value=[_make_budget_summary()])
-        result = json.loads(await list_budgets())
+        mock_cache.get_plans = AsyncMock(return_value=[_make_plan_summary()])
+        result = json.loads(await list_plans())
         assert len(result) == 1
         assert result[0]["id"] == "bud-1"
-        assert result[0]["name"] == "My Budget"
+        assert result[0]["name"] == "My Plan"
 
     @pytest.mark.asyncio
-    async def test_empty_budgets(self, mock_cache):
-        from src.server import list_budgets
+    async def test_empty_plans(self, mock_cache):
+        from src.server import list_plans
 
-        mock_cache.get_budgets = AsyncMock(return_value=[])
-        result = json.loads(await list_budgets())
+        mock_cache.get_plans = AsyncMock(return_value=[])
+        result = json.loads(await list_plans())
         assert result == []
 
 
-class TestGetBudget:
+class TestGetPlan:
     @pytest.mark.asyncio
-    async def test_returns_budget_detail(self, mock_cache):
-        from src.server import get_budget
+    async def test_returns_plan_detail(self, mock_cache):
+        from src.server import get_plan
 
-        mock_cache.get_budget = AsyncMock(return_value=_make_budget_detail())
-        result = json.loads(await get_budget(budget_id="bud-1"))
+        mock_cache.get_plan = AsyncMock(return_value=_make_plan_detail())
+        result = json.loads(await get_plan(plan_id="bud-1"))
         assert result["id"] == "bud-1"
-        assert result["last_modified"] == "2026-03-15"
+        assert result["last_modified_on"] == "2026-03-15"
 
 
 # ── Account Tools ─────────────────────────────────────────────
@@ -134,7 +134,7 @@ class TestListAccounts:
         from src.server import list_accounts
 
         mock_cache.get_accounts = AsyncMock(return_value=[_make_account()])
-        result = json.loads(await list_accounts(budget_id="bud-1"))
+        result = json.loads(await list_accounts(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["name"] == "Checking"
         assert "deleted" not in result[0]
@@ -146,7 +146,7 @@ class TestGetAccount:
         from src.server import get_account
 
         mock_cache.get_account = AsyncMock(return_value=_make_account())
-        result = json.loads(await get_account(account_id="acc-1", budget_id="bud-1"))
+        result = json.loads(await get_account(account_id="acc-1", plan_id="bud-1"))
         assert result["id"] == "acc-1"
 
 
@@ -159,7 +159,7 @@ class TestListTransactions:
         from src.server import list_transactions
 
         mock_cache.get_transactions = AsyncMock(return_value=[_make_transaction()])
-        result = json.loads(await list_transactions(budget_id="bud-1"))
+        result = json.loads(await list_transactions(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["amount"] == -50250
 
@@ -168,7 +168,7 @@ class TestListTransactions:
         from src.server import list_transactions
 
         mock_cache.get_transactions = AsyncMock(return_value=[])
-        await list_transactions(budget_id="bud-1", since_date="2026-01-01", type="uncategorized")
+        await list_transactions(plan_id="bud-1", since_date="2026-01-01", type="uncategorized")
         mock_cache.get_transactions.assert_called_once_with("bud-1", "2026-01-01", "uncategorized")
 
 
@@ -178,7 +178,7 @@ class TestGetTransaction:
         from src.server import get_transaction
 
         mock_cache.get_transaction = AsyncMock(return_value=_make_transaction())
-        result = json.loads(await get_transaction(transaction_id="txn-1", budget_id="bud-1"))
+        result = json.loads(await get_transaction(transaction_id="txn-1", plan_id="bud-1"))
         assert result["id"] == "txn-1"
 
 
@@ -188,7 +188,7 @@ class TestGetTransactionsByAccount:
         from src.server import get_transactions_by_account
 
         mock_cache.get_transactions_by_account = AsyncMock(return_value=[_make_transaction()])
-        result = json.loads(await get_transactions_by_account(account_id="acc-1", budget_id="bud-1"))
+        result = json.loads(await get_transactions_by_account(account_id="acc-1", plan_id="bud-1"))
         assert len(result) == 1
 
 
@@ -198,7 +198,7 @@ class TestGetTransactionsByCategory:
         from src.server import get_transactions_by_category
 
         mock_cache.get_transactions_by_category = AsyncMock(return_value=[_make_transaction()])
-        result = json.loads(await get_transactions_by_category(category_id="cat-1", budget_id="bud-1"))
+        result = json.loads(await get_transactions_by_category(category_id="cat-1", plan_id="bud-1"))
         assert len(result) == 1
 
 
@@ -208,7 +208,7 @@ class TestGetTransactionsByPayee:
         from src.server import get_transactions_by_payee
 
         mock_cache.get_transactions_by_payee = AsyncMock(return_value=[_make_transaction()])
-        result = json.loads(await get_transactions_by_payee(payee_id="pay-1", budget_id="bud-1"))
+        result = json.loads(await get_transactions_by_payee(payee_id="pay-1", plan_id="bud-1"))
         assert len(result) == 1
 
 
@@ -219,7 +219,7 @@ class TestCreateTransaction:
 
         mock_cache.create_transaction = AsyncMock(return_value=_make_transaction(amount=-50250))
         await create_transaction(
-            budget_id="bud-1", account_id="acc-1", date="2026-03-15", amount=-50.25,
+            plan_id="bud-1", account_id="acc-1", date="2026-03-15", amount=-50.25,
         )
         call_args = mock_cache.create_transaction.call_args
         txn_dict = call_args[0][0]
@@ -231,7 +231,7 @@ class TestCreateTransaction:
 
         mock_cache.create_transaction = AsyncMock(return_value=_make_transaction())
         await create_transaction(
-            budget_id="bud-1", account_id="acc-1", date="2026-03-15", amount=-10.0,
+            plan_id="bud-1", account_id="acc-1", date="2026-03-15", amount=-10.0,
             payee_name="Store", category_id="cat-1", memo="test",
         )
         txn_dict = mock_cache.create_transaction.call_args[0][0]
@@ -245,7 +245,7 @@ class TestCreateTransaction:
 
         mock_cache.create_transaction = AsyncMock(return_value=_make_transaction())
         await create_transaction(
-            budget_id="bud-1", account_id="acc-1", date="2026-03-15", amount=-10.0,
+            plan_id="bud-1", account_id="acc-1", date="2026-03-15", amount=-10.0,
         )
         txn_dict = mock_cache.create_transaction.call_args[0][0]
         assert "payee_name" not in txn_dict
@@ -262,7 +262,7 @@ class TestCreateTransactions:
             return_value=[_make_transaction(id="t1"), _make_transaction(id="t2")]
         )
         await create_transactions(
-            budget_id="bud-1",
+            plan_id="bud-1",
             account_id="acc-1",
             transactions=[
                 {"date": "2026-03-15", "amount": -25.50},
@@ -280,7 +280,7 @@ class TestCreateTransactions:
 
         mock_cache.create_transactions = AsyncMock(return_value=[_make_transaction()])
         await create_transactions(
-            budget_id="bud-1",
+            plan_id="bud-1",
             account_id="acc-default",
             transactions=[{"date": "2026-03-15", "amount": -5.0, "account_id": "acc-override"}],
         )
@@ -293,7 +293,7 @@ class TestCreateTransactions:
 
         mock_cache.create_transactions = AsyncMock(return_value=[_make_transaction()])
         await create_transactions(
-            budget_id="bud-1",
+            plan_id="bud-1",
             account_id="acc-default",
             transactions=[{"date": "2026-03-15", "amount": -5.0}],
         )
@@ -307,7 +307,7 @@ class TestUpdateTransaction:
         from src.server import update_transaction
 
         mock_cache.update_transaction = AsyncMock(return_value=_make_transaction())
-        await update_transaction(budget_id="bud-1", transaction_id="txn-1", amount=-75.00)
+        await update_transaction(plan_id="bud-1", transaction_id="txn-1", amount=-75.00)
         call_args = mock_cache.update_transaction.call_args
         txn_dict = call_args[0][1]
         assert txn_dict["amount"] == -75000
@@ -317,7 +317,7 @@ class TestUpdateTransaction:
         from src.server import update_transaction
 
         mock_cache.update_transaction = AsyncMock(return_value=_make_transaction())
-        await update_transaction(budget_id="bud-1", transaction_id="txn-1", memo="updated")
+        await update_transaction(plan_id="bud-1", transaction_id="txn-1", memo="updated")
         txn_dict = mock_cache.update_transaction.call_args[0][1]
         assert txn_dict == {"memo": "updated"}
 
@@ -328,7 +328,7 @@ class TestDeleteTransaction:
         from src.server import delete_transaction
 
         mock_cache.delete_transaction = AsyncMock(return_value=_make_transaction())
-        result = json.loads(await delete_transaction(transaction_id="txn-1", budget_id="bud-1"))
+        result = json.loads(await delete_transaction(transaction_id="txn-1", plan_id="bud-1"))
         assert result["id"] == "txn-1"
 
 
@@ -341,7 +341,7 @@ class TestUpdateTransactions:
             return_value=[_make_transaction(id="t1"), _make_transaction(id="t2")]
         )
         await update_transactions(
-            budget_id="bud-1",
+            plan_id="bud-1",
             transactions=[
                 {"id": "t1", "amount": -25.50},
                 {"id": "t2", "amount": 10.00},
@@ -359,7 +359,7 @@ class TestUpdateTransactions:
             return_value=[_make_transaction(id="t1")]
         )
         await update_transactions(
-            budget_id="bud-1",
+            plan_id="bud-1",
             transactions=[{"id": "t1", "memo": "updated"}],
         )
         prepared = mock_cache.update_transactions.call_args[0][0]
@@ -370,7 +370,7 @@ class TestUpdateTransactions:
         from src.server import update_transactions
 
         result = json.loads(await update_transactions(
-            budget_id="bud-1",
+            plan_id="bud-1",
             transactions=[{"memo": "no id here"}],
         ))
         assert "error" in result
@@ -388,7 +388,7 @@ class TestListCategories:
         cat = _make_category()
         group = _make_category_group(categories=[cat])
         mock_cache.get_categories = AsyncMock(return_value=[group])
-        result = json.loads(await list_categories(budget_id="bud-1"))
+        result = json.loads(await list_categories(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["name"] == "Bills"
         assert len(result[0]["categories"]) == 1
@@ -402,19 +402,19 @@ class TestGetCategoryForMonth:
         cat = _make_category(goal_type="TB", goal_target=500000, budgeted=250000)
         mock_cache.get_category_for_month = AsyncMock(return_value=cat)
         result = json.loads(await get_category_for_month(
-            category_id="cat-1", month="2026-03-01", budget_id="bud-1"
+            category_id="cat-1", month="2026-03-01", plan_id="bud-1"
         ))
         assert result["goal_type"] == "TB"
 
 
-class TestUpdateCategoryBudget:
+class TestUpdateCategoryForMonth:
     @pytest.mark.asyncio
     async def test_converts_dollars_to_milliunits(self, mock_cache):
         from src.server import update_category_for_month
 
         mock_cache.update_category_for_month = AsyncMock(return_value=_make_category(budgeted=500000))
         await update_category_for_month(
-            category_id="cat-1", month="2026-03-01", budgeted=500.00, budget_id="bud-1"
+            category_id="cat-1", month="2026-03-01", budgeted=500.00, plan_id="bud-1"
         )
         call_args = mock_cache.update_category_for_month.call_args
         assert call_args[0][2] == 500000  # third positional arg is budgeted in milliunits
@@ -429,7 +429,7 @@ class TestListPayees:
         from src.server import list_payees
 
         mock_cache.get_payees = AsyncMock(return_value=[_make_payee()])
-        result = json.loads(await list_payees(budget_id="bud-1"))
+        result = json.loads(await list_payees(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["name"] == "Amazon"
 
@@ -443,7 +443,7 @@ class TestListMonths:
         from src.server import list_months
 
         mock_cache.get_months = AsyncMock(return_value=[_make_month_summary()])
-        result = json.loads(await list_months(budget_id="bud-1"))
+        result = json.loads(await list_months(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["income"] == 5000000
 
@@ -454,7 +454,7 @@ class TestGetMonth:
         from src.server import get_month
 
         mock_cache.get_month = AsyncMock(return_value=_make_month_detail())
-        result = json.loads(await get_month(month="2026-03-01", budget_id="bud-1"))
+        result = json.loads(await get_month(month="2026-03-01", plan_id="bud-1"))
         assert "categories" in result
         assert result["income"] == 5000000
 
@@ -470,7 +470,7 @@ class TestListScheduledTransactions:
         mock_cache.get_scheduled_transactions = AsyncMock(
             return_value=[_make_scheduled_transaction()]
         )
-        result = json.loads(await list_scheduled_transactions(budget_id="bud-1"))
+        result = json.loads(await list_scheduled_transactions(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["frequency"] == "monthly"
 
@@ -490,7 +490,7 @@ class TestGetMoneyFlow:
         month = _make_month_detail(income=3000000, categories=cats)
         mock_cache.get_month = AsyncMock(return_value=month)
 
-        result = json.loads(await get_money_flow(budget_id="bud-1", month="2026-03-01"))
+        result = json.loads(await get_money_flow(plan_id="bud-1", month="2026-03-01"))
         assert result["total_income"] == 3000.0
         assert result["total_spent"] == 2000.0
         assert len(result["nodes"]) == 3  # Income + 2 groups
@@ -508,7 +508,7 @@ class TestGetMoneyFlow:
         month = _make_month_detail(income=2000000, categories=cats)
         mock_cache.get_month = AsyncMock(return_value=month)
 
-        result = json.loads(await get_money_flow(budget_id="bud-1", month="2026-03-01"))
+        result = json.loads(await get_money_flow(plan_id="bud-1", month="2026-03-01"))
         node_names = [n["name"] for n in result["nodes"]]
         assert "Internal Master Category" not in node_names
         assert "Credit Card Payments" not in node_names
@@ -526,7 +526,7 @@ class TestGetMoneyFlow:
         month = _make_month_detail(income=1000000, categories=cats)
         mock_cache.get_month = AsyncMock(return_value=month)
 
-        result = json.loads(await get_money_flow(budget_id="bud-1", month="2026-03-01"))
+        result = json.loads(await get_money_flow(plan_id="bud-1", month="2026-03-01"))
         node_names = [n["name"] for n in result["nodes"]]
         assert "Entertainment" not in node_names
 
@@ -537,7 +537,7 @@ class TestGetMoneyFlow:
         month = _make_month_detail(income=0, categories=[])
         mock_cache.get_month = AsyncMock(return_value=month)
 
-        result = json.loads(await get_money_flow(budget_id="bud-1", month="current"))
+        result = json.loads(await get_money_flow(plan_id="bud-1", month="current"))
         # Should have resolved "current" to a YYYY-MM-DD string
         assert result["month"] != "current"
         assert len(result["month"]) == 10  # YYYY-MM-DD
@@ -555,7 +555,7 @@ class TestSearchTransactions:
             _make_transaction(payee_name="Whole Foods", memo=None, category_name="Groceries"),
             _make_transaction(id="txn-2", payee_name="Target", memo=None, category_name="Shopping"),
         ])
-        result = json.loads(await search_transactions(budget_id="bud-1", query="whole"))
+        result = json.loads(await search_transactions(plan_id="bud-1", query="whole"))
         assert len(result) == 1
         assert result[0]["payee"] == "Whole Foods"
 
@@ -566,7 +566,7 @@ class TestSearchTransactions:
         mock_cache.get_transactions = AsyncMock(return_value=[
             _make_transaction(payee_name="Store", memo="birthday gift", category_name=None),
         ])
-        result = json.loads(await search_transactions(budget_id="bud-1", query="birthday"))
+        result = json.loads(await search_transactions(plan_id="bud-1", query="birthday"))
         assert len(result) == 1
 
     @pytest.mark.asyncio
@@ -576,7 +576,7 @@ class TestSearchTransactions:
         mock_cache.get_transactions = AsyncMock(return_value=[
             _make_transaction(payee_name="Shell", memo=None, category_name="Gas & Fuel"),
         ])
-        result = json.loads(await search_transactions(budget_id="bud-1", query="fuel"))
+        result = json.loads(await search_transactions(plan_id="bud-1", query="fuel"))
         assert len(result) == 1
 
     @pytest.mark.asyncio
@@ -589,7 +589,7 @@ class TestSearchTransactions:
             _make_transaction(id="t3", payee_name="A", amount=-100000),  # -$100
         ])
         result = json.loads(await search_transactions(
-            budget_id="bud-1", query="A", amount_min=-60.0, amount_max=-5.0
+            plan_id="bud-1", query="A", amount_min=-60.0, amount_max=-5.0
         ))
         assert len(result) == 2
         amounts = {r["amount"] for r in result}
@@ -605,7 +605,7 @@ class TestSearchTransactions:
             _make_transaction(id="t3", payee_name="Store", amount=-5000),
         ])
         result = json.loads(await search_transactions(
-            budget_id="bud-1", query="cafe", amount_min=-10.0
+            plan_id="bud-1", query="cafe", amount_min=-10.0
         ))
         assert len(result) == 1
         assert result[0]["amount"] == -5000
@@ -617,7 +617,7 @@ class TestSearchTransactions:
         mock_cache.get_transactions = AsyncMock(return_value=[
             _make_transaction(payee_name="Store", memo=None, category_name="Shopping"),
         ])
-        result = json.loads(await search_transactions(budget_id="bud-1", query="nonexistent"))
+        result = json.loads(await search_transactions(plan_id="bud-1", query="nonexistent"))
         assert result == []
 
 
@@ -634,7 +634,7 @@ class TestGetSpendingByCategory:
             _make_category(name="Food", category_group_name="Groceries", activity=-500000, budgeted=600000, balance=100000),
         ]
         mock_cache.get_month = AsyncMock(return_value=_make_month_detail(categories=cats))
-        result = json.loads(await get_spending_by_category(budget_id="bud-1", month="2026-03-01"))
+        result = json.loads(await get_spending_by_category(plan_id="bud-1", month="2026-03-01"))
         assert result["total_spent"] == 2000.0
         assert len(result["categories"]) == 2
         # Sorted by spending highest first
@@ -651,7 +651,7 @@ class TestGetSpendingByCategory:
             _make_category(name="Unused", category_group_name="Entertainment", activity=0, budgeted=200000),
         ]
         mock_cache.get_month = AsyncMock(return_value=_make_month_detail(categories=cats))
-        result = json.loads(await get_spending_by_category(budget_id="bud-1", month="2026-03-01"))
+        result = json.loads(await get_spending_by_category(plan_id="bud-1", month="2026-03-01"))
         names = [c["name"] for c in result["categories"]]
         assert "Unused" not in names
 
@@ -665,7 +665,7 @@ class TestGetSpendingByCategory:
             _make_category(name="CC", category_group_name="Credit Card Payments", activity=-200000),
         ]
         mock_cache.get_month = AsyncMock(return_value=_make_month_detail(categories=cats))
-        result = json.loads(await get_spending_by_category(budget_id="bud-1", month="2026-03-01"))
+        result = json.loads(await get_spending_by_category(plan_id="bud-1", month="2026-03-01"))
         groups = {c["group"] for c in result["categories"]}
         assert "Internal Master Category" not in groups
         assert "Credit Card Payments" not in groups
@@ -675,7 +675,7 @@ class TestGetSpendingByCategory:
         from src.server import get_spending_by_category
 
         mock_cache.get_month = AsyncMock(return_value=_make_month_detail(categories=[]))
-        result = json.loads(await get_spending_by_category(budget_id="bud-1"))
+        result = json.loads(await get_spending_by_category(plan_id="bud-1"))
         assert result["month"] != "current"
         assert len(result["month"]) == 10
 
@@ -686,32 +686,32 @@ class TestGetSpendingByCategory:
 class TestHandleErrors:
     @pytest.mark.asyncio
     async def test_ynab_error(self, mock_cache):
-        from src.server import list_budgets
+        from src.server import list_plans
         from src.ynab_client import YNABError
 
-        mock_cache.get_budgets = AsyncMock(side_effect=YNABError(404, "not_found", "Budget not found"))
-        result = json.loads(await list_budgets())
-        assert result["error"] == "Budget not found"
+        mock_cache.get_plans = AsyncMock(side_effect=YNABError(404, "not_found", "Plan not found"))
+        result = json.loads(await list_plans())
+        assert result["error"] == "Plan not found"
         assert result["error_id"] == "not_found"
         assert result["status_code"] == 404
 
     @pytest.mark.asyncio
     async def test_http_status_error(self, mock_cache):
         import httpx
-        from src.server import list_budgets
+        from src.server import list_plans
 
         response = httpx.Response(500, text="Internal Server Error", request=httpx.Request("GET", "https://api.ynab.com"))
-        mock_cache.get_budgets = AsyncMock(side_effect=httpx.HTTPStatusError("error", request=response.request, response=response))
-        result = json.loads(await list_budgets())
+        mock_cache.get_plans = AsyncMock(side_effect=httpx.HTTPStatusError("error", request=response.request, response=response))
+        result = json.loads(await list_plans())
         assert "HTTP 500" in result["error"]
 
     @pytest.mark.asyncio
     async def test_request_error(self, mock_cache):
         import httpx
-        from src.server import list_budgets
+        from src.server import list_plans
 
-        mock_cache.get_budgets = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
-        result = json.loads(await list_budgets())
+        mock_cache.get_plans = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
+        result = json.loads(await list_plans())
         assert "Request failed" in result["error"]
 
 

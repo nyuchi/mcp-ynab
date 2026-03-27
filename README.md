@@ -53,7 +53,8 @@ See [mcp-ynab.com](https://mcp-ynab.com) for config file locations and troublesh
 
 | Group | Tools |
 |-------|-------|
-| **Budget** | `list_budgets`, `get_budget` |
+| **User** | `get_user` |
+| **Plans** | `list_plans`, `get_plan` |
 | **Accounts** | `list_accounts`, `get_account` |
 | **Transactions** | `list_transactions`, `get_transaction`, `get_transactions_by_account`, `get_transactions_by_category`, `get_transactions_by_payee`, `search_transactions`, `create_transaction`, `create_transactions`, `update_transaction`, `update_transactions`, `delete_transaction` |
 | **Categories** | `list_categories`, `get_category`, `create_category`, `update_category`, `create_category_group`, `update_category_group`, `get_category_for_month`, `update_category_for_month` |

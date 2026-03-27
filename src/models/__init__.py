@@ -1,5 +1,5 @@
 from src.models.common import YNABBaseModel
-from src.models.budget import BudgetSummary, BudgetDetail
+from src.models.plan import PlanSettings, PlanSummary, PlanDetail
 from src.models.account import Account
 from src.models.transaction import Transaction, Subtransaction, ScheduledTransaction
 from src.models.category import Category, CategoryGroup
@@ -9,8 +9,9 @@ from src.models.user import User
 
 __all__ = [
     "YNABBaseModel",
-    "BudgetSummary",
-    "BudgetDetail",
+    "PlanSettings",
+    "PlanSummary",
+    "PlanDetail",
     "Account",
     "Transaction",
     "Subtransaction",

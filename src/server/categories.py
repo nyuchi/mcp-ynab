@@ -4,33 +4,33 @@ from src.server._shared import dollars_to_milliunits, serialize, serialize_list
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def list_categories(budget_id: str) -> str:
+async def list_categories(plan_id: str) -> str:
     """List all categories grouped by category group.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
-    groups = await _shared.cache.get_categories(budget_id)
+    groups = await _shared.cache.get_categories(plan_id)
     return serialize_list(groups)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def get_category(category_id: str, budget_id: str) -> str:
+async def get_category(category_id: str, plan_id: str) -> str:
     """Get a single category. Amounts are specific to the current plan month (UTC).
 
     Args:
         category_id: The category ID
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
-    cat = await _shared.cache.get_category(category_id, budget_id)
+    cat = await _shared.cache.get_category(category_id, plan_id)
     return serialize(cat)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def create_category(
-    budget_id: str,
+    plan_id: str,
     category_group_id: str,
     name: str,
     note: str | None = None,
@@ -40,7 +40,7 @@ async def create_category(
     """Create a new category in a category group.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         category_group_id: The category group ID to create the category in
         name: The name of the new category
         note: Optional note for the category
@@ -58,14 +58,14 @@ async def create_category(
     if goal_target_date is not None:
         category["goal_target_date"] = goal_target_date
 
-    cat = await _shared.cache.create_category(category, budget_id)
+    cat = await _shared.cache.create_category(category, plan_id)
     return serialize(cat)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def update_category(
-    budget_id: str,
+    plan_id: str,
     category_id: str,
     name: str | None = None,
     note: str | None = None,
@@ -76,7 +76,7 @@ async def update_category(
     """Update a category. Only provide the fields you want to change.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         category_id: The category ID to update
         name: New name for the category
         note: New note for the category
@@ -96,42 +96,42 @@ async def update_category(
     if goal_target_date is not None:
         category["goal_target_date"] = goal_target_date
 
-    cat = await _shared.cache.update_category(category_id, category, budget_id)
+    cat = await _shared.cache.update_category(category_id, category, plan_id)
     return serialize(cat)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def create_category_group(
-    budget_id: str,
+    plan_id: str,
     name: str,
 ) -> str:
     """Create a new category group.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         name: The name of the category group (max 50 characters)
     """
-    group = await _shared.cache.create_category_group({"name": name}, budget_id)
+    group = await _shared.cache.create_category_group({"name": name}, plan_id)
     return serialize(group)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def update_category_group(
-    budget_id: str,
+    plan_id: str,
     category_group_id: str,
     name: str,
 ) -> str:
     """Update a category group.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         category_group_id: The category group ID to update
         name: New name for the category group (max 50 characters)
     """
     group = await _shared.cache.update_category_group(
-        category_group_id, {"name": name}, budget_id
+        category_group_id, {"name": name}, plan_id
     )
     return serialize(group)
 
@@ -139,23 +139,23 @@ async def update_category_group(
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def get_category_for_month(
-    category_id: str, month: str, budget_id: str
+    category_id: str, month: str, plan_id: str
 ) -> str:
     """Get category details for a specific month.
 
     Args:
         category_id: The category ID
         month: Month in YYYY-MM-DD format (use first of month, e.g. '2026-03-01')
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
-    cat = await _shared.cache.get_category_for_month(month, category_id, budget_id)
+    cat = await _shared.cache.get_category_for_month(month, category_id, plan_id)
     return serialize(cat)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def update_category_for_month(
-    category_id: str, month: str, budgeted: float, budget_id: str
+    category_id: str, month: str, budgeted: float, plan_id: str
 ) -> str:
     """Update the budgeted amount for a category in a specific month.
 
@@ -163,9 +163,9 @@ async def update_category_for_month(
         category_id: The category ID
         month: Month in YYYY-MM-DD format (use first of month, e.g. '2026-03-01')
         budgeted: Budgeted amount in dollars (e.g. 500.00)
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
     cat = await _shared.cache.update_category_for_month(
-        month, category_id, dollars_to_milliunits(budgeted), budget_id
+        month, category_id, dollars_to_milliunits(budgeted), plan_id
     )
     return serialize(cat)

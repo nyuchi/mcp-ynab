@@ -8,31 +8,31 @@ from src.server._shared import dollars_to_milliunits, serialize, serialize_list
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def list_transactions(
-    budget_id: str,
+    plan_id: str,
     since_date: str | None = None,
     type: str | None = None,
 ) -> str:
-    """List transactions in a budget. Can filter by date and type.
+    """List transactions in a plan. Can filter by date and type.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
         type: Filter by 'uncategorized' or 'unapproved'
     """
-    transactions = await _shared.cache.get_transactions(budget_id, since_date, type)
+    transactions = await _shared.cache.get_transactions(plan_id, since_date, type)
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def get_transaction(transaction_id: str, budget_id: str) -> str:
+async def get_transaction(transaction_id: str, plan_id: str) -> str:
     """Get a specific transaction by ID.
 
     Args:
         transaction_id: The transaction ID
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
-    txn = await _shared.cache.get_transaction(transaction_id, budget_id)
+    txn = await _shared.cache.get_transaction(transaction_id, plan_id)
     return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
@@ -40,17 +40,17 @@ async def get_transaction(transaction_id: str, budget_id: str) -> str:
 @_shared.handle_errors
 async def get_transactions_by_account(
     account_id: str,
-    budget_id: str,
+    plan_id: str,
     since_date: str | None = None,
 ) -> str:
     """Get transactions for a specific account.
 
     Args:
         account_id: The account ID
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
     """
-    transactions = await _shared.cache.get_transactions_by_account(account_id, budget_id, since_date)
+    transactions = await _shared.cache.get_transactions_by_account(account_id, plan_id, since_date)
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
@@ -58,17 +58,17 @@ async def get_transactions_by_account(
 @_shared.handle_errors
 async def get_transactions_by_category(
     category_id: str,
-    budget_id: str,
+    plan_id: str,
     since_date: str | None = None,
 ) -> str:
     """Get transactions for a specific category.
 
     Args:
         category_id: The category ID
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
     """
-    transactions = await _shared.cache.get_transactions_by_category(category_id, budget_id, since_date)
+    transactions = await _shared.cache.get_transactions_by_category(category_id, plan_id, since_date)
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
@@ -76,24 +76,24 @@ async def get_transactions_by_category(
 @_shared.handle_errors
 async def get_transactions_by_payee(
     payee_id: str,
-    budget_id: str,
+    plan_id: str,
     since_date: str | None = None,
 ) -> str:
     """Get transactions for a specific payee.
 
     Args:
         payee_id: The payee ID
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
     """
-    transactions = await _shared.cache.get_transactions_by_payee(payee_id, budget_id, since_date)
+    transactions = await _shared.cache.get_transactions_by_payee(payee_id, plan_id, since_date)
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def search_transactions(
-    budget_id: str,
+    plan_id: str,
     query: str,
     since_date: str | None = None,
     amount_min: float | None = None,
@@ -102,13 +102,13 @@ async def search_transactions(
     """Search transactions by text across payee, memo, and category fields.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         query: Text to search for (case-insensitive, matches payee, memo, and category)
         since_date: Only search transactions on or after this date (YYYY-MM-DD)
         amount_min: Minimum amount in dollars (e.g. -100.00). Filters by absolute value if both min and max are positive, otherwise by raw value.
         amount_max: Maximum amount in dollars (e.g. -10.00)
     """
-    transactions = await _shared.cache.get_transactions(budget_id, since_date)
+    transactions = await _shared.cache.get_transactions(plan_id, since_date)
     q = query.lower()
 
     matches = []
@@ -130,7 +130,7 @@ async def search_transactions(
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def create_transaction(
-    budget_id: str,
+    plan_id: str,
     account_id: str,
     date: str,
     amount: float,
@@ -151,7 +151,7 @@ async def create_transaction(
         memo: Optional memo/note
         cleared: 'cleared', 'uncleared', or 'reconciled'
         approved: Whether the transaction is approved
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
     transaction = {
         "account_id": account_id,
@@ -167,21 +167,21 @@ async def create_transaction(
     if memo:
         transaction["memo"] = memo
 
-    txn = await _shared.cache.create_transaction(transaction, budget_id)
+    txn = await _shared.cache.create_transaction(transaction, plan_id)
     return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def create_transactions(
-    budget_id: str,
+    plan_id: str,
     account_id: str,
     transactions: list[dict],
 ) -> str:
     """Create multiple transactions in a single API call. Ideal for bulk imports.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         account_id: Default account ID for all transactions
         transactions: List of transaction dicts, each with:
             - date: Transaction date in YYYY-MM-DD format
@@ -210,14 +210,14 @@ async def create_transactions(
             txn["memo"] = txn_input["memo"]
         prepared.append(txn)
 
-    txns = await _shared.cache.create_transactions(prepared, budget_id)
+    txns = await _shared.cache.create_transactions(prepared, plan_id)
     return serialize_list(txns, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def update_transaction(
-    budget_id: str,
+    plan_id: str,
     transaction_id: str,
     account_id: str | None = None,
     date: str | None = None,
@@ -240,7 +240,7 @@ async def update_transaction(
         memo: New memo
         cleared: 'cleared', 'uncleared', or 'reconciled'
         approved: Whether the transaction is approved
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
     transaction = {}
     if account_id is not None:
@@ -260,27 +260,27 @@ async def update_transaction(
     if approved is not None:
         transaction["approved"] = approved
 
-    txn = await _shared.cache.update_transaction(transaction_id, transaction, budget_id)
+    txn = await _shared.cache.update_transaction(transaction_id, transaction, plan_id)
     return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def delete_transaction(transaction_id: str, budget_id: str) -> str:
+async def delete_transaction(transaction_id: str, plan_id: str) -> str:
     """Delete a transaction.
 
     Args:
         transaction_id: The transaction ID to delete
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
     """
-    txn = await _shared.cache.delete_transaction(transaction_id, budget_id)
+    txn = await _shared.cache.delete_transaction(transaction_id, plan_id)
     return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def update_transactions(
-    budget_id: str,
+    plan_id: str,
     transactions: list[dict],
 ) -> str:
     """Update multiple transactions in a single API call. Each transaction must include its ID.
@@ -289,7 +289,7 @@ async def update_transactions(
     bulk approval, bulk clearing, etc.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         transactions: List of transaction dicts, each requiring:
             - id: The transaction ID to update
             And optionally:
@@ -328,5 +328,5 @@ async def update_transactions(
             txn["flag_color"] = txn_input["flag_color"]
         prepared.append(txn)
 
-    txns = await _shared.cache.update_transactions(prepared, budget_id)
+    txns = await _shared.cache.update_transactions(prepared, plan_id)
     return serialize_list(txns, exclude=TRANSACTION_DISPLAY_EXCLUDE)

@@ -8,13 +8,13 @@ MONEY_FLOW_EXCLUDE_GROUPS = {"Internal Master Category", "Credit Card Payments"}
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def get_money_flow(budget_id: str, month: str = "current") -> str:
+async def get_money_flow(plan_id: str, month: str = "current") -> str:
     """Build Sankey chart data showing money flow from income sources to spending category groups.
 
     Returns nodes and index-based links suitable for Sankey/flow visualizations.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         month: Month in YYYY-MM-DD format (first of month, e.g. '2026-03-01') or 'current'
     """
     if month == "current":
@@ -22,7 +22,7 @@ async def get_money_flow(budget_id: str, month: str = "current") -> str:
         month = today.replace(day=1).strftime("%Y-%m-%d")
 
     # Fetch month detail (has categories with activity and income total)
-    month_detail = await _shared.cache.get_month(month, budget_id)
+    month_detail = await _shared.cache.get_month(month, plan_id)
 
     # Group categories by category_group_name and sum activity
     group_activity: dict[str, int] = {}
@@ -61,21 +61,21 @@ async def get_money_flow(budget_id: str, month: str = "current") -> str:
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def get_spending_by_category(budget_id: str, month: str = "current") -> str:
+async def get_spending_by_category(plan_id: str, month: str = "current") -> str:
     """Get per-category spending breakdown for a month, with budget vs actual comparison.
 
     Returns categories sorted by spending (highest first), grouped by category group,
     with budgeted, spent, balance, and percentage of total spending.
 
     Args:
-        budget_id: The budget ID (use list_budgets to find available IDs)
+        plan_id: The plan ID (use list_plans to find available IDs)
         month: Month in YYYY-MM-DD format (first of month, e.g. '2026-03-01') or 'current'
     """
     if month == "current":
         today = date.today()
         month = today.replace(day=1).strftime("%Y-%m-%d")
 
-    month_detail = await _shared.cache.get_month(month, budget_id)
+    month_detail = await _shared.cache.get_month(month, plan_id)
 
     # Collect categories with non-zero activity, excluding internal groups
     categories = []
