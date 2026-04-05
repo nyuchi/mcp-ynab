@@ -7,6 +7,7 @@ from src.models.category import Category, CategoryGroup
 from src.models.common import YNABBaseModel
 from src.models.month import MonthDetail
 from src.models.payee import Payee
+from src.models.payee_location import PayeeLocation
 from src.models.transaction import ScheduledTransaction, Subtransaction, Transaction
 
 PLAN_SUMMARY_DISPLAY_EXCLUDE: set[str] = set()
@@ -25,14 +26,6 @@ class CurrencyFormat(YNABBaseModel):
     group_separator: str = Field()
     currency_symbol: str = Field()
     display_symbol: bool = Field()
-
-
-class PayeeLocation(YNABBaseModel):
-    id: str = Field()
-    payee_id: str = Field()
-    latitude: str = Field()
-    longitude: str = Field()
-    deleted: bool = Field(default=False)
 
 
 class ScheduledSubtransaction(YNABBaseModel):

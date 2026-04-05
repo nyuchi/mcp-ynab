@@ -4,6 +4,7 @@ from src.models.account import Account
 from src.models.transaction import Transaction, Subtransaction, ScheduledTransaction
 from src.models.category import Category, CategoryGroup
 from src.models.payee import Payee
+from src.models.payee_location import PayeeLocation
 from src.models.month import MonthSummary, MonthDetail
 from src.models.user import User
 
@@ -19,6 +20,7 @@ __all__ = [
     "Category",
     "CategoryGroup",
     "Payee",
+    "PayeeLocation",
     "MonthSummary",
     "MonthDetail",
     "User",

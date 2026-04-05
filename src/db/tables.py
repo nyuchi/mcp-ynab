@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 
 
 class CachedEntity(Base):
-    __tablename__ = "cached_entities"
+    __tablename__ = "cached_entity"
     __table_args__ = (UniqueConstraint("plan_id", "entity_type", "entity_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)

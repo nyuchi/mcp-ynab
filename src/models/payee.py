@@ -2,7 +2,7 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
-PAYEE_DISPLAY_EXCLUDE = {"transfer_account_id", "deleted"}
+PAYEE_DISPLAY_EXCLUDE: set[str] = set()
 
 
 class Payee(YNABBaseModel):

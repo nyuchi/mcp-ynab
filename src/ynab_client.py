@@ -11,6 +11,7 @@ from src.models import (
     MonthDetail,
     MonthSummary,
     Payee,
+    PayeeLocation,
     ScheduledTransaction,
     Transaction,
     User,
@@ -334,6 +335,31 @@ class YNABClient:
     async def get_payee(self, payee_id: str, plan_id: str) -> Payee:
         data = await self._get(f"/plans/{plan_id}/payees/{payee_id}")
         return Payee.model_validate(data["data"]["payee"])
+
+    async def update_payee(self, payee_id: str, payee: dict, plan_id: str) -> Payee:
+        data = await self._patch(
+            f"/plans/{plan_id}/payees/{payee_id}",
+            json={"payee": payee},
+        )
+        return Payee.model_validate(data["data"]["payee"])
+
+    # ── Payee Locations ──────────────────────────────────────
+
+    async def get_payee_locations(self, plan_id: str) -> list[PayeeLocation]:
+        data = await self._get(f"/plans/{plan_id}/payee_locations")
+        return [PayeeLocation.model_validate(pl) for pl in data["data"]["payee_locations"]]
+
+    async def get_payee_location(
+        self, payee_location_id: str, plan_id: str
+    ) -> PayeeLocation:
+        data = await self._get(f"/plans/{plan_id}/payee_locations/{payee_location_id}")
+        return PayeeLocation.model_validate(data["data"]["payee_location"])
+
+    async def get_payee_locations_by_payee(
+        self, payee_id: str, plan_id: str
+    ) -> list[PayeeLocation]:
+        data = await self._get(f"/plans/{plan_id}/payees/{payee_id}/payee_locations")
+        return [PayeeLocation.model_validate(pl) for pl in data["data"]["payee_locations"]]
 
     # ── Months ───────────────────────────────────────────────
 

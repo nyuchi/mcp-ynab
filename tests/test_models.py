@@ -137,10 +137,13 @@ class TestPlanDetail:
 
 
 class TestPayee:
-    def test_display_dump_only_id_and_name(self):
+    def test_display_dump_returns_all_fields(self):
         p = Payee(id="p1", name="Amazon", transfer_account_id="ta1")
         result = p.model_dump(by_alias=True, exclude=PAYEE_DISPLAY_EXCLUDE)
-        assert result == {"id": "p1", "name": "Amazon"}
+        assert result["id"] == "p1"
+        assert result["name"] == "Amazon"
+        assert result["transfer_account_id"] == "ta1"
+        assert "deleted" in result
 
 
 class TestMonthSummary:

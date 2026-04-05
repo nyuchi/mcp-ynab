@@ -1,6 +1,6 @@
 from src.models.payee import PAYEE_DISPLAY_EXCLUDE
 from src.server import _shared
-from src.server._shared import serialize_list
+from src.server._shared import serialize, serialize_list
 
 
 @_shared.mcp.tool()
@@ -13,3 +13,34 @@ async def list_payees(plan_id: str) -> str:
     """
     payees = await _shared.cache.get_payees(plan_id)
     return serialize_list(payees, exclude=PAYEE_DISPLAY_EXCLUDE)
+
+
+@_shared.mcp.tool()
+@_shared.handle_errors
+async def get_payee(payee_id: str, plan_id: str) -> str:
+    """Get a single payee.
+
+    Args:
+        payee_id: The payee ID
+        plan_id: The plan ID (use list_plans to find available IDs)
+    """
+    payee = await _shared.cache.get_payee(payee_id, plan_id)
+    return serialize(payee)
+
+
+@_shared.mcp.tool()
+@_shared.handle_errors
+async def update_payee(
+    plan_id: str,
+    payee_id: str,
+    name: str,
+) -> str:
+    """Update a payee.
+
+    Args:
+        plan_id: The plan ID (use list_plans to find available IDs)
+        payee_id: The payee ID to update
+        name: New name for the payee (max 500 characters)
+    """
+    payee = await _shared.cache.update_payee(payee_id, {"name": name}, plan_id)
+    return serialize(payee)

@@ -20,6 +20,7 @@ from src.models import (
     MonthDetail,
     MonthSummary,
     Payee,
+    PayeeLocation,
     ScheduledTransaction,
     Transaction,
     User,
@@ -466,6 +467,69 @@ class CacheService:
             plan_id, ENDPOINT_PAYEES, ENTITY_PAYEE, Payee,
             lambda bid, **kw: self.client.get_payees(bid, **kw),
         )
+
+    async def get_payee(self, payee_id: str, plan_id: str) -> Payee:
+        payees = await self.get_payees(plan_id)
+        for p in payees:
+            if p.id == payee_id:
+                return p
+        # Fallback to direct API
+        cache_key = f"payee:{plan_id}:{payee_id}"
+        cached = await self._get_cached_model(cache_key, self.settings.ttl_single_entity, Payee)
+        if cached is not None:
+            return cached
+
+        payee = await self.retry.execute(
+            lambda: self.client.get_payee(payee_id, plan_id), cache_key=cache_key,
+        )
+        await self._set_cached_model(cache_key, payee, self.settings.ttl_single_entity)
+        return payee
+
+    async def update_payee(self, payee_id: str, payee: dict, plan_id: str) -> Payee:
+        p = await self.client.update_payee(payee_id, payee, plan_id)
+        await self.delta.invalidate_knowledge(plan_id, ENDPOINT_PAYEES)
+        return p
+
+    # Payee Locations (TTL cached)
+
+    async def get_payee_locations(self, plan_id: str) -> list[PayeeLocation]:
+        cache_key = f"payee_locations:{plan_id}"
+        ttl = self.settings.ttl_budgets
+        cached = await self._get_cached_model_list(cache_key, ttl, PayeeLocation)
+        if cached is not None:
+            return cached
+
+        locations = await self.retry.execute(
+            lambda: self.client.get_payee_locations(plan_id), cache_key=cache_key,
+        )
+        await self._set_cached_model_list(cache_key, locations, ttl)
+        return locations
+
+    async def get_payee_location(
+        self, payee_location_id: str, plan_id: str
+    ) -> PayeeLocation:
+        locations = await self.get_payee_locations(plan_id)
+        for loc in locations:
+            if loc.id == payee_location_id:
+                return loc
+        # Fallback to direct API
+        cache_key = f"payee_location:{plan_id}:{payee_location_id}"
+        cached = await self._get_cached_model(cache_key, self.settings.ttl_single_entity, PayeeLocation)
+        if cached is not None:
+            return cached
+
+        loc = await self.retry.execute(
+            lambda: self.client.get_payee_location(payee_location_id, plan_id),
+            cache_key=cache_key,
+        )
+        await self._set_cached_model(cache_key, loc, self.settings.ttl_single_entity)
+        return loc
+
+    async def get_payee_locations_by_payee(
+        self, payee_id: str, plan_id: str
+    ) -> list[PayeeLocation]:
+        locations = await self.get_payee_locations(plan_id)
+        return [loc for loc in locations if loc.payee_id == payee_id]
 
     # Months (delta synced)
 
