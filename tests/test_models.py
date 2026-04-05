@@ -147,10 +147,12 @@ class TestPayee:
 
 
 class TestMonthSummary:
-    def test_display_dump_excludes_deleted(self):
-        m = MonthSummary(month="2026-03-01", deleted=True)
+    def test_display_dump_returns_all_fields(self):
+        m = MonthSummary(month="2026-03-01", deleted=True, age_of_money=45)
         result = m.model_dump(by_alias=True, exclude=MONTH_DISPLAY_EXCLUDE)
-        assert "deleted" not in result
+        assert "deleted" in result
+        assert "note" in result
+        assert result["age_of_money"] == 45
 
     def test_roundtrip_preserves_values(self):
         m = MonthSummary(month="2026-03-01", income=5000000, deleted=True)
@@ -167,6 +169,9 @@ class TestMonthDetail:
         result = m.model_dump(by_alias=True, exclude=MONTH_DISPLAY_EXCLUDE)
         assert result["income"] == 5000000
         assert len(result["categories"]) == 1
+        assert "deleted" in result
+        assert "note" in result
+        assert "age_of_money" in result
 
 
 class TestScheduledTransaction:

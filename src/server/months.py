@@ -1,8 +1,6 @@
-import json
-
 from src.models.month import MONTH_DISPLAY_EXCLUDE
 from src.server import _shared
-from src.server._shared import serialize_list
+from src.server._shared import serialize, serialize_list
 
 
 @_shared.mcp.tool()
@@ -27,9 +25,4 @@ async def get_month(month: str, plan_id: str) -> str:
         plan_id: The plan ID (use list_plans to find available IDs)
     """
     m = await _shared.cache.get_month(month, plan_id)
-    md = m.model_dump(by_alias=True, exclude=MONTH_DISPLAY_EXCLUDE)
-    md["categories"] = [
-        c.model_dump(by_alias=True)
-        for c in m.categories
-    ]
-    return json.dumps(md, indent=2)
+    return serialize(m)
