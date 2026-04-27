@@ -340,9 +340,22 @@ class CacheService:
         since_date: str | None = None,
         type: str | None = None,
     ) -> list[HybridTransaction]:
-        return await self.client.get_transactions_by_category(
-            category_id, plan_id, since_date=since_date, type=type
+        cache_key = (
+            f"transactions:category:{plan_id}:{category_id}:"
+            f"{since_date or 'none'}:{type or 'none'}"
         )
+        ttl = self.settings.ttl_single_entity
+        cached = await self._get_cached_model_list(cache_key, ttl, HybridTransaction)
+        if cached is not None:
+            return cached
+        txns = await self.retry.execute(
+            lambda: self.client.get_transactions_by_category(
+                category_id, plan_id, since_date=since_date, type=type
+            ),
+            cache_key=cache_key,
+        )
+        await self._set_cached_model_list(cache_key, txns, ttl)
+        return txns
 
     async def get_transactions_by_month(
         self,
@@ -351,9 +364,23 @@ class CacheService:
         since_date: str | None = None,
         type: str | None = None,
     ) -> list[Transaction]:
-        txns, _ = await self.client.get_transactions_by_month(
-            month, plan_id, since_date=since_date, type=type
+        cache_key = (
+            f"transactions:month:{plan_id}:{month}:"
+            f"{since_date or 'none'}:{type or 'none'}"
         )
+        ttl = self.settings.ttl_single_entity
+        cached = await self._get_cached_model_list(cache_key, ttl, Transaction)
+        if cached is not None:
+            return cached
+
+        async def fetch() -> list[Transaction]:
+            txns, _server_knowledge = await self.client.get_transactions_by_month(
+                month, plan_id, since_date=since_date, type=type
+            )
+            return txns
+
+        txns = await self.retry.execute(fetch, cache_key=cache_key)
+        await self._set_cached_model_list(cache_key, txns, ttl)
         return txns
 
     async def get_transactions_by_payee(
@@ -363,9 +390,22 @@ class CacheService:
         since_date: str | None = None,
         type: str | None = None,
     ) -> list[HybridTransaction]:
-        return await self.client.get_transactions_by_payee(
-            payee_id, plan_id, since_date=since_date, type=type
+        cache_key = (
+            f"transactions:payee:{plan_id}:{payee_id}:"
+            f"{since_date or 'none'}:{type or 'none'}"
         )
+        ttl = self.settings.ttl_single_entity
+        cached = await self._get_cached_model_list(cache_key, ttl, HybridTransaction)
+        if cached is not None:
+            return cached
+        txns = await self.retry.execute(
+            lambda: self.client.get_transactions_by_payee(
+                payee_id, plan_id, since_date=since_date, type=type
+            ),
+            cache_key=cache_key,
+        )
+        await self._set_cached_model_list(cache_key, txns, ttl)
+        return txns
 
     # Transaction mutations
 
