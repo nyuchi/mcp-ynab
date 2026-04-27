@@ -84,13 +84,39 @@ def dollars_to_milliunits(amount: float) -> int:
     return round(amount * 1000)
 
 
+# Nested default excludes: when a parent model contains a list of nested models,
+# the nested model's default excludes need to be applied explicitly because
+# Pydantic's model_dump(exclude=set) only handles top-level fields.
+NESTED_DEFAULT_EXCLUDES: dict[type[YNABBaseModel], dict[str, type[YNABBaseModel]]] = {
+    CategoryGroup: {"categories": Category},
+    MonthDetail: {"categories": Category},
+}
+
+
 def _resolve_exclude(
     model_class: type[YNABBaseModel], exclude_fields: list[str] | None
-) -> set[str]:
-    """Pick the exclude set: caller's list if provided, otherwise the model default."""
+) -> set[str] | dict[str, object]:
+    """Pick the exclude for a model.
+
+    Top-level uses the caller's exclude_fields if provided, otherwise the model
+    default. Nested defaults (per NESTED_DEFAULT_EXCLUDES) always apply so the
+    nested-model defaults aren't dropped when a caller customizes top-level.
+    """
     if exclude_fields is None:
-        return DEFAULT_EXCLUDES.get(model_class, set())
-    return set(exclude_fields)
+        top_level: set[str] = DEFAULT_EXCLUDES.get(model_class, set())
+    else:
+        top_level = set(exclude_fields)
+
+    nested = NESTED_DEFAULT_EXCLUDES.get(model_class)
+    if not nested:
+        return top_level
+
+    exclude: dict[str, object] = {f: True for f in top_level}
+    for field_name, nested_class in nested.items():
+        nested_default = DEFAULT_EXCLUDES.get(nested_class, set())
+        if nested_default:
+            exclude[field_name] = {"__all__": nested_default}
+    return exclude
 
 
 def serialize(model, *, exclude_fields: list[str] | None = None) -> str:

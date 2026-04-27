@@ -413,6 +413,36 @@ class TestListCategories:
         assert result[0]["name"] == "Bills"
         assert len(result[0]["categories"]) == 1
 
+    @pytest.mark.asyncio
+    async def test_nested_categories_apply_default_excludes(self, mock_cache):
+        from src.server import list_categories
+
+        cat = _make_category(
+            original_category_group_id="orig-grp",
+            goal_target_month="2026-01-01",
+        )
+        group = _make_category_group(categories=[cat], deleted=True)
+        mock_cache.get_categories = AsyncMock(return_value=[group])
+        result = json.loads(await list_categories(plan_id="bud-1"))
+
+        assert "deleted" not in result[0]
+        nested = result[0]["categories"][0]
+        assert "original_category_group_id" not in nested
+        assert "goal_target_month" not in nested
+        assert nested["name"] == "Food"
+
+    @pytest.mark.asyncio
+    async def test_nested_excludes_apply_even_with_top_level_override(self, mock_cache):
+        from src.server import list_categories
+
+        cat = _make_category(original_category_group_id="orig-grp")
+        group = _make_category_group(categories=[cat], deleted=True)
+        mock_cache.get_categories = AsyncMock(return_value=[group])
+        result = json.loads(await list_categories(plan_id="bud-1", exclude_fields=[]))
+
+        assert result[0]["deleted"] is True  # caller asked for everything top-level
+        assert "original_category_group_id" not in result[0]["categories"][0]
+
 
 class TestGetCategoryForMonth:
     @pytest.mark.asyncio
@@ -477,6 +507,22 @@ class TestGetMonth:
         result = json.loads(await get_month(month="2026-03-01", plan_id="bud-1"))
         assert "categories" in result
         assert result["income"] == 5000000
+
+    @pytest.mark.asyncio
+    async def test_nested_categories_apply_default_excludes(self, mock_cache):
+        from src.server import get_month
+
+        cat = _make_category(
+            original_category_group_id="orig-grp",
+            goal_cadence=1,
+        )
+        mock_cache.get_month = AsyncMock(return_value=_make_month_detail(categories=[cat]))
+        result = json.loads(await get_month(month="2026-03-01", plan_id="bud-1"))
+
+        nested = result["categories"][0]
+        assert "original_category_group_id" not in nested
+        assert "goal_cadence" not in nested
+        assert nested["name"] == "Food"
 
 
 # ── Scheduled Transactions ────────────────────────────────────
