@@ -309,15 +309,19 @@ class TestGetMonth:
 class TestGetScheduledTransactions:
     @pytest.mark.asyncio
     async def test_returns_scheduled(self, client):
-        data = {"data": {"scheduled_transactions": [
-            {"id": "st1", "date_next": "2026-04-01", "frequency": "monthly", "amount": -10000},
-        ]}}
+        data = {"data": {
+            "scheduled_transactions": [
+                {"id": "st1", "date_next": "2026-04-01", "frequency": "monthly", "amount": -10000},
+            ],
+            "server_knowledge": 42,
+        }}
         client._client = AsyncMock()
         client._client.get = AsyncMock(return_value=_mock_response(data))
 
-        result = await client.get_scheduled_transactions("b1")
+        result, knowledge = await client.get_scheduled_transactions("b1")
         assert len(result) == 1
         assert result[0].frequency == "monthly"
+        assert knowledge == 42
 
 
 # ── URL Construction ──────────────────────────────────────────

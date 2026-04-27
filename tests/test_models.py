@@ -15,7 +15,8 @@ from src.models.plan import PLAN_SUMMARY_DISPLAY_EXCLUDE
 from src.models.category import CATEGORY_DETAIL_INCLUDE, CATEGORY_LIST_EXCLUDE
 from src.models.month import MONTH_DISPLAY_EXCLUDE
 from src.models.payee import PAYEE_DISPLAY_EXCLUDE
-from src.models.transaction import SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE, TRANSACTION_DISPLAY_EXCLUDE
+from src.models.scheduled_transaction import SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE
+from src.models.transaction import TRANSACTION_DISPLAY_EXCLUDE
 
 
 class TestTransaction:

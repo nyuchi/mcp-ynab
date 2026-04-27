@@ -8,7 +8,8 @@ from src.models.common import YNABBaseModel
 from src.models.month import MonthDetail
 from src.models.payee import Payee
 from src.models.payee_location import PayeeLocation
-from src.models.transaction import ScheduledTransaction, Subtransaction, Transaction
+from src.models.scheduled_transaction import ScheduledSubtransaction, ScheduledTransaction
+from src.models.transaction import Subtransaction, Transaction
 
 PLAN_SUMMARY_DISPLAY_EXCLUDE: set[str] = set()
 
@@ -26,20 +27,6 @@ class CurrencyFormat(YNABBaseModel):
     group_separator: str = Field()
     currency_symbol: str = Field()
     display_symbol: bool = Field()
-
-
-class ScheduledSubtransaction(YNABBaseModel):
-    id: str = Field()
-    scheduled_transaction_id: str = Field()
-    amount: int = Field(default=0)
-    memo: str | None = Field(default=None)
-    payee_id: str | None = Field(default=None)
-    payee_name: str | None = Field(default=None)
-    category_id: str | None = Field(default=None)
-    category_name: str | None = Field(default=None)
-    transfer_account_id: str | None = Field(default=None)
-    transfer_transaction_id: str | None = Field(default=None)
-    deleted: bool = Field(default=False)
 
 
 class PlanSettings(YNABBaseModel):

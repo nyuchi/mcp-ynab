@@ -3,7 +3,6 @@ from pydantic import Field
 from src.models.common import YNABBaseModel
 
 TRANSACTION_DISPLAY_EXCLUDE: set[str] = set()
-SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE: set[str] = set()
 
 
 class Subtransaction(YNABBaseModel):
@@ -74,23 +73,4 @@ class HybridTransaction(YNABBaseModel):
     debt_transaction_type: str | None = Field(default=None)
     type: str | None = Field(default=None)
     parent_transaction_id: str | None = Field(default=None)
-    deleted: bool = Field(default=False)
-
-
-class ScheduledTransaction(YNABBaseModel):
-    id: str = Field()
-    date_first: str | None = Field(default=None)
-    date_next: str | None = Field(default=None)
-    frequency: str | None = Field(default=None)
-    amount: int = Field(default=0)
-    memo: str | None = Field(default=None)
-    flag_color: str | None = Field(default=None)
-    flag_name: str | None = Field(default=None)
-    account_id: str | None = Field(default=None)
-    account_name: str | None = Field(default=None)
-    payee_id: str | None = Field(default=None)
-    payee_name: str | None = Field(default=None)
-    category_id: str | None = Field(default=None)
-    category_name: str | None = Field(default=None)
-    subtransactions: list[Subtransaction] = Field(default=[])
     deleted: bool = Field(default=False)

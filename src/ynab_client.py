@@ -442,12 +442,46 @@ class YNABClient:
 
     # ── Scheduled Transactions ───────────────────────────────
 
-    async def get_scheduled_transactions(self, plan_id: str) -> list[ScheduledTransaction]:
-        data = await self._get(f"/plans/{plan_id}/scheduled_transactions")
-        return [
+    async def create_scheduled_transaction(
+        self, scheduled_transaction: dict, plan_id: str
+    ) -> ScheduledTransaction:
+        data = await self._post(
+            f"/plans/{plan_id}/scheduled_transactions",
+            json={"scheduled_transaction": scheduled_transaction},
+        )
+        return ScheduledTransaction.model_validate(data["data"]["scheduled_transaction"])
+
+    async def update_scheduled_transaction(
+        self,
+        scheduled_transaction_id: str,
+        scheduled_transaction: dict,
+        plan_id: str,
+    ) -> ScheduledTransaction:
+        data = await self._put(
+            f"/plans/{plan_id}/scheduled_transactions/{scheduled_transaction_id}",
+            json={"scheduled_transaction": scheduled_transaction},
+        )
+        return ScheduledTransaction.model_validate(data["data"]["scheduled_transaction"])
+
+    async def delete_scheduled_transaction(
+        self, scheduled_transaction_id: str, plan_id: str
+    ) -> ScheduledTransaction:
+        data = await self._delete(
+            f"/plans/{plan_id}/scheduled_transactions/{scheduled_transaction_id}"
+        )
+        return ScheduledTransaction.model_validate(data["data"]["scheduled_transaction"])
+
+    async def get_scheduled_transactions(
+        self, plan_id: str, *, last_knowledge_of_server: int | None = None
+    ) -> tuple[list[ScheduledTransaction], int]:
+        params = self._add_knowledge(None, last_knowledge_of_server)
+        data = await self._get(f"/plans/{plan_id}/scheduled_transactions", params=params)
+        txns = [
             ScheduledTransaction.model_validate(t)
             for t in data["data"]["scheduled_transactions"]
         ]
+        knowledge = data["data"]["server_knowledge"]
+        return txns, knowledge
 
     async def get_scheduled_transaction(
         self, transaction_id: str, plan_id: str

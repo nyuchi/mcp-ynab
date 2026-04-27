@@ -2,8 +2,9 @@ from src.models.common import YNABBaseModel
 from src.models.plan import PlanSettings, PlanSummary, PlanDetail
 from src.models.account import Account
 from src.models.transaction import (
-    Transaction, Subtransaction, ScheduledTransaction, HybridTransaction,
+    Transaction, Subtransaction, HybridTransaction,
 )
+from src.models.scheduled_transaction import ScheduledTransaction, ScheduledSubtransaction
 from src.models.category import Category, CategoryGroup
 from src.models.payee import Payee
 from src.models.payee_location import PayeeLocation
@@ -20,6 +21,7 @@ __all__ = [
     "Transaction",
     "Subtransaction",
     "ScheduledTransaction",
+    "ScheduledSubtransaction",
     "HybridTransaction",
     "Category",
     "CategoryGroup",

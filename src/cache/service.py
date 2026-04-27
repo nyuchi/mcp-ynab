@@ -43,6 +43,7 @@ ENDPOINT_PAYEES = "payees"
 ENDPOINT_MONEY_MOVEMENTS = "money_movements"
 ENDPOINT_MONEY_MOVEMENT_GROUPS = "money_movement_groups"
 ENDPOINT_MONTHS = "months"
+ENDPOINT_SCHEDULED_TRANSACTIONS = "scheduled_transactions"
 
 # Delta sync entity type keys (used for entity storage)
 ENTITY_ACCOUNT = "account"
@@ -53,6 +54,7 @@ ENTITY_MONEY_MOVEMENT = "money_movement"
 ENTITY_MONEY_MOVEMENT_GROUP = "money_movement_group"
 ENTITY_PAYEE = "payee"
 ENTITY_MONTH = "month"
+ENTITY_SCHEDULED_TRANSACTION = "scheduled_transaction"
 
 
 class CacheService:
@@ -605,17 +607,57 @@ class CacheService:
         await self._set_cached_model(cache_key, m, self.settings.ttl_month_detail)
         return m
 
-    # Scheduled Transactions (TTL cached)
+    # Scheduled Transactions (delta synced)
+
+    async def create_scheduled_transaction(
+        self, scheduled_transaction: dict, plan_id: str
+    ) -> ScheduledTransaction:
+        txn = await self.client.create_scheduled_transaction(scheduled_transaction, plan_id)
+        await self.delta.invalidate_knowledge(plan_id, ENDPOINT_SCHEDULED_TRANSACTIONS)
+        return txn
+
+    async def update_scheduled_transaction(
+        self,
+        scheduled_transaction_id: str,
+        scheduled_transaction: dict,
+        plan_id: str,
+    ) -> ScheduledTransaction:
+        txn = await self.client.update_scheduled_transaction(
+            scheduled_transaction_id, scheduled_transaction, plan_id
+        )
+        await self.delta.invalidate_knowledge(plan_id, ENDPOINT_SCHEDULED_TRANSACTIONS)
+        return txn
+
+    async def delete_scheduled_transaction(
+        self, scheduled_transaction_id: str, plan_id: str
+    ) -> ScheduledTransaction:
+        txn = await self.client.delete_scheduled_transaction(scheduled_transaction_id, plan_id)
+        await self.delta.invalidate_knowledge(plan_id, ENDPOINT_SCHEDULED_TRANSACTIONS)
+        return txn
 
     async def get_scheduled_transactions(self, plan_id: str) -> list[ScheduledTransaction]:
-        cache_key = f"scheduled_transactions:{plan_id}"
-        ttl = self.settings.ttl_scheduled_transactions
-        cached = await self._get_cached_model_list(cache_key, ttl, ScheduledTransaction)
+        return await self._delta_sync(
+            plan_id, ENDPOINT_SCHEDULED_TRANSACTIONS, ENTITY_SCHEDULED_TRANSACTION,
+            ScheduledTransaction,
+            lambda pid, **kw: self.client.get_scheduled_transactions(pid, **kw),
+        )
+
+    async def get_scheduled_transaction(
+        self, scheduled_transaction_id: str, plan_id: str
+    ) -> ScheduledTransaction:
+        txns = await self.get_scheduled_transactions(plan_id)
+        for t in txns:
+            if t.id == scheduled_transaction_id:
+                return t
+        # Fallback to direct API
+        cache_key = f"scheduled_transaction:{plan_id}:{scheduled_transaction_id}"
+        cached = await self._get_cached_model(cache_key, self.settings.ttl_single_entity, ScheduledTransaction)
         if cached is not None:
             return cached
 
-        txns = await self.retry.execute(
-            lambda: self.client.get_scheduled_transactions(plan_id), cache_key=cache_key,
+        txn = await self.retry.execute(
+            lambda: self.client.get_scheduled_transaction(scheduled_transaction_id, plan_id),
+            cache_key=cache_key,
         )
-        await self._set_cached_model_list(cache_key, txns, ttl)
-        return txns
+        await self._set_cached_model(cache_key, txn, self.settings.ttl_single_entity)
+        return txn

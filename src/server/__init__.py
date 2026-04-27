@@ -25,7 +25,11 @@ from src.server.money_movements import (
     list_money_movement_groups, get_money_movement_groups_for_month,
 )
 from src.server.months import list_months, get_month
-from src.server.scheduled import list_scheduled_transactions
+from src.server.scheduled import (
+    list_scheduled_transactions, get_scheduled_transaction,
+    create_scheduled_transaction, update_scheduled_transaction,
+    delete_scheduled_transaction,
+)
 from src.server.analytics import get_money_flow, get_spending_by_category
 
 __all__ = [
@@ -45,7 +49,9 @@ __all__ = [
     "list_money_movements", "get_money_movements_for_month",
     "list_money_movement_groups", "get_money_movement_groups_for_month",
     "list_months", "get_month",
-    "list_scheduled_transactions",
+    "list_scheduled_transactions", "get_scheduled_transaction",
+    "create_scheduled_transaction", "update_scheduled_transaction",
+    "delete_scheduled_transaction",
     "get_money_flow", "get_spending_by_category",
     "main",
 ]
