@@ -208,7 +208,7 @@ class CacheService:
     # Budgets (TTL cached, no delta)
 
     async def get_plans(self) -> list[PlanSummary]:
-        cache_key = "budgets"
+        cache_key = "plans"
         ttl = self.settings.ttl_budgets
         cached = await self._get_cached_model_list(cache_key, ttl, PlanSummary)
         if cached is not None:
@@ -234,7 +234,7 @@ class CacheService:
         return settings
 
     async def get_plan(self, plan_id: str) -> PlanDetail:
-        cache_key = f"budget:{plan_id}"
+        cache_key = f"plan:{plan_id}"
         ttl = self.settings.ttl_budgets
         cached = await self._get_cached_model(cache_key, ttl, PlanDetail)
         if cached is not None:
