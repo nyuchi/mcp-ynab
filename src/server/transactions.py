@@ -5,6 +5,15 @@ from src.server import _shared
 from src.server._shared import dollars_to_milliunits, serialize, serialize_list
 
 
+def _prepare_subtransaction(sub: dict) -> dict:
+    """Convert a subtransaction dict from dollars to milliunits and filter optional keys."""
+    out: dict = {"amount": dollars_to_milliunits(sub["amount"])}
+    for key in ("payee_id", "payee_name", "category_id", "memo"):
+        if sub.get(key) is not None:
+            out[key] = sub[key]
+    return out
+
+
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def list_transactions(
@@ -42,15 +51,19 @@ async def get_transactions_by_account(
     account_id: str,
     plan_id: str,
     since_date: str | None = None,
+    type: str | None = None,
 ) -> str:
-    """Get transactions for a specific account.
+    """Get transactions for a specific account, excluding pending transactions.
 
     Args:
         account_id: The account ID
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
+        type: Filter by 'uncategorized' or 'unapproved'
     """
-    transactions = await _shared.cache.get_transactions_by_account(account_id, plan_id, since_date)
+    transactions = await _shared.cache.get_transactions_by_account(
+        account_id, plan_id, since_date, type
+    )
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
@@ -60,15 +73,45 @@ async def get_transactions_by_category(
     category_id: str,
     plan_id: str,
     since_date: str | None = None,
+    type: str | None = None,
 ) -> str:
-    """Get transactions for a specific category.
+    """Get all transactions for a specific category, excluding pending transactions.
+
+    Returns hybrid transactions which may represent regular transactions or subtransactions
+    of split transactions. Each result includes a 'type' field ('transaction' or 'subtransaction')
+    and 'parent_transaction_id' (set on subtransactions only).
 
     Args:
         category_id: The category ID
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
+        type: Filter by 'uncategorized' or 'unapproved'
     """
-    transactions = await _shared.cache.get_transactions_by_category(category_id, plan_id, since_date)
+    transactions = await _shared.cache.get_transactions_by_category(
+        category_id, plan_id, since_date, type
+    )
+    return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+
+
+@_shared.mcp.tool()
+@_shared.handle_errors
+async def get_transactions_by_month(
+    month: str,
+    plan_id: str,
+    since_date: str | None = None,
+    type: str | None = None,
+) -> str:
+    """Get all transactions for a specific plan month, excluding pending transactions.
+
+    Args:
+        month: Month in YYYY-MM-DD format (first of month) or 'current'
+        plan_id: The plan ID (use list_plans to find available IDs)
+        since_date: Only return transactions on or after this date (YYYY-MM-DD)
+        type: Filter by 'uncategorized' or 'unapproved'
+    """
+    transactions = await _shared.cache.get_transactions_by_month(
+        month, plan_id, since_date, type
+    )
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
@@ -78,15 +121,23 @@ async def get_transactions_by_payee(
     payee_id: str,
     plan_id: str,
     since_date: str | None = None,
+    type: str | None = None,
 ) -> str:
-    """Get transactions for a specific payee.
+    """Get all transactions for a specific payee, excluding pending transactions.
+
+    Returns hybrid transactions which may represent regular transactions or subtransactions
+    of split transactions. Each result includes a 'type' field ('transaction' or 'subtransaction')
+    and 'parent_transaction_id' (set on subtransactions only).
 
     Args:
         payee_id: The payee ID
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
+        type: Filter by 'uncategorized' or 'unapproved'
     """
-    transactions = await _shared.cache.get_transactions_by_payee(payee_id, plan_id, since_date)
+    transactions = await _shared.cache.get_transactions_by_payee(
+        payee_id, plan_id, since_date, type
+    )
     return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
 
 
@@ -134,36 +185,54 @@ async def create_transaction(
     account_id: str,
     date: str,
     amount: float,
+    payee_id: str | None = None,
     payee_name: str | None = None,
     category_id: str | None = None,
     memo: str | None = None,
     cleared: str = "uncleared",
     approved: bool = False,
+    flag_color: str | None = None,
+    import_id: str | None = None,
+    subtransactions: list[dict] | None = None,
 ) -> str:
-    """Create a new transaction.
+    """Create a new transaction. Future-dated transactions are not permitted (use scheduled transactions instead).
 
     Args:
+        plan_id: The plan ID (use list_plans to find available IDs)
         account_id: The account ID for this transaction
-        date: Transaction date in YYYY-MM-DD format
+        date: Transaction date in YYYY-MM-DD format (must not be in the future)
         amount: Amount in dollars (negative for outflow, positive for inflow). e.g. -50.25 for spending $50.25
-        payee_name: Name of the payee
-        category_id: Category ID to assign
-        memo: Optional memo/note
+        payee_id: Payee ID (use list_payees to find available IDs). For account transfers, use the target account's transfer_payee_id.
+        payee_name: Payee name. If payee_id is null, this resolves to an existing payee or creates a new one.
+        category_id: Category ID. Use null with subtransactions to create a split. Credit Card Payment categories are ignored.
+        memo: Memo/note (max 500 chars)
         cleared: 'cleared', 'uncleared', or 'reconciled'
         approved: Whether the transaction is approved
-        plan_id: The plan ID (use list_plans to find available IDs)
+        flag_color: 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
+        import_id: Unique import identifier (max 36 chars). Used for matching against imported transactions.
+        subtransactions: For splits, an array of dicts with keys: amount (dollars, required), payee_id, payee_name, category_id, memo
     """
-    transaction = {
+    transaction: dict = {
         "account_id": account_id,
         "date": date,
         "amount": dollars_to_milliunits(amount),
         "cleared": cleared,
         "approved": approved,
     }
+    if payee_id:
+        transaction["payee_id"] = payee_id
     if payee_name:
         transaction["payee_name"] = payee_name
     if category_id:
         transaction["category_id"] = category_id
+    if flag_color:
+        transaction["flag_color"] = flag_color
+    if import_id:
+        transaction["import_id"] = import_id
+    if subtransactions:
+        transaction["subtransactions"] = [
+            _prepare_subtransaction(sub) for sub in subtransactions
+        ]
     if memo:
         transaction["memo"] = memo
 
@@ -180,34 +249,42 @@ async def create_transactions(
 ) -> str:
     """Create multiple transactions in a single API call. Ideal for bulk imports.
 
+    Future-dated transactions are not permitted. The response includes any duplicate_import_ids
+    that were rejected because of an existing import_id on the same account.
+
     Args:
         plan_id: The plan ID (use list_plans to find available IDs)
         account_id: Default account ID for all transactions
         transactions: List of transaction dicts, each with:
-            - date: Transaction date in YYYY-MM-DD format
-            - amount: Amount in dollars (negative for outflow, positive for inflow)
-            - payee_name: (optional) Name of the payee
-            - category_id: (optional) Category ID to assign
-            - memo: (optional) Memo/note
+            - date: Transaction date in YYYY-MM-DD format (required)
+            - amount: Amount in dollars (required, negative for outflow, positive for inflow)
             - account_id: (optional) Override the default account ID
+            - payee_id: (optional) Payee ID
+            - payee_name: (optional) Payee name (resolves to existing or creates a new payee)
+            - category_id: (optional) Category ID. Use null with subtransactions for splits.
+            - memo: (optional) Memo (max 500 chars)
             - cleared: (optional) 'cleared', 'uncleared', or 'reconciled' (default: 'uncleared')
             - approved: (optional) Whether the transaction is approved (default: false)
+            - flag_color: (optional) 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
+            - import_id: (optional) Unique import identifier (max 36 chars)
+            - subtransactions: (optional) For splits, a list of subtransaction dicts with: amount, payee_id, payee_name, category_id, memo
     """
     prepared = []
     for txn_input in transactions:
-        txn = {
+        txn: dict = {
             "account_id": txn_input.get("account_id", account_id),
             "date": txn_input["date"],
             "amount": dollars_to_milliunits(txn_input["amount"]),
             "cleared": txn_input.get("cleared", "uncleared"),
             "approved": txn_input.get("approved", False),
         }
-        if txn_input.get("payee_name"):
-            txn["payee_name"] = txn_input["payee_name"]
-        if txn_input.get("category_id"):
-            txn["category_id"] = txn_input["category_id"]
-        if txn_input.get("memo"):
-            txn["memo"] = txn_input["memo"]
+        for key in ("payee_id", "payee_name", "category_id", "memo", "flag_color", "import_id"):
+            if txn_input.get(key):
+                txn[key] = txn_input[key]
+        if txn_input.get("subtransactions"):
+            txn["subtransactions"] = [
+                _prepare_subtransaction(sub) for sub in txn_input["subtransactions"]
+            ]
         prepared.append(txn)
 
     txns = await _shared.cache.create_transactions(prepared, plan_id)
@@ -222,33 +299,45 @@ async def update_transaction(
     account_id: str | None = None,
     date: str | None = None,
     amount: float | None = None,
+    payee_id: str | None = None,
     payee_name: str | None = None,
     category_id: str | None = None,
     memo: str | None = None,
     cleared: str | None = None,
     approved: bool | None = None,
+    flag_color: str | None = None,
+    subtransactions: list[dict] | None = None,
 ) -> str:
     """Update an existing transaction. Only provide the fields you want to change.
 
+    Future-dated transactions are not permitted. Split transaction amounts and dates
+    cannot be changed. If an existing transaction is a split, category_id cannot be
+    changed and updating subtransactions is not supported.
+
     Args:
+        plan_id: The plan ID (use list_plans to find available IDs)
         transaction_id: The transaction ID to update
         account_id: New account ID
-        date: New date (YYYY-MM-DD)
+        date: New date (YYYY-MM-DD, must not be in the future)
         amount: New amount in dollars (negative for outflow, positive for inflow)
-        payee_name: New payee name
-        category_id: New category ID
-        memo: New memo
+        payee_id: New payee ID. For account transfers, use target account's transfer_payee_id.
+        payee_name: New payee name (resolves to existing or creates a new payee)
+        category_id: New category ID. Use null with subtransactions to create a split.
+        memo: New memo (max 500 chars)
         cleared: 'cleared', 'uncleared', or 'reconciled'
         approved: Whether the transaction is approved
-        plan_id: The plan ID (use list_plans to find available IDs)
+        flag_color: 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
+        subtransactions: For creating a new split, list of dicts with: amount, payee_id, payee_name, category_id, memo
     """
-    transaction = {}
+    transaction: dict = {}
     if account_id is not None:
         transaction["account_id"] = account_id
     if date is not None:
         transaction["date"] = date
     if amount is not None:
         transaction["amount"] = dollars_to_milliunits(amount)
+    if payee_id is not None:
+        transaction["payee_id"] = payee_id
     if payee_name is not None:
         transaction["payee_name"] = payee_name
     if category_id is not None:
@@ -259,6 +348,12 @@ async def update_transaction(
         transaction["cleared"] = cleared
     if approved is not None:
         transaction["approved"] = approved
+    if flag_color is not None:
+        transaction["flag_color"] = flag_color
+    if subtransactions is not None:
+        transaction["subtransactions"] = [
+            _prepare_subtransaction(sub) for sub in subtransactions
+        ]
 
     txn = await _shared.cache.update_transaction(transaction_id, transaction, plan_id)
     return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
@@ -279,53 +374,74 @@ async def delete_transaction(transaction_id: str, plan_id: str) -> str:
 
 @_shared.mcp.tool()
 @_shared.handle_errors
+async def import_transactions(plan_id: str) -> str:
+    """Import available transactions on all linked accounts for the given plan.
+
+    Equivalent to clicking 'Import' on each account in the YNAB web app or tapping
+    the 'New Transactions' banner in the mobile app. Returns the list of transaction
+    IDs that were imported.
+
+    Args:
+        plan_id: The plan ID (use list_plans to find available IDs)
+    """
+    transaction_ids = await _shared.cache.import_transactions(plan_id)
+    return json.dumps({"transaction_ids": transaction_ids}, indent=2)
+
+
+@_shared.mcp.tool()
+@_shared.handle_errors
 async def update_transactions(
     plan_id: str,
     transactions: list[dict],
 ) -> str:
-    """Update multiple transactions in a single API call. Each transaction must include its ID.
+    """Update multiple transactions in a single API call.
 
+    Each transaction must include either 'id' or 'import_id' for lookup (not both).
     Only provided fields are updated (sparse update). Ideal for bulk recategorization,
-    bulk approval, bulk clearing, etc.
+    bulk approval, bulk clearing, etc. Updating subtransactions on an existing split
+    is not supported. Future-dated transactions are not permitted.
 
     Args:
         plan_id: The plan ID (use list_plans to find available IDs)
-        transactions: List of transaction dicts, each requiring:
-            - id: The transaction ID to update
-            And optionally:
+        transactions: List of transaction dicts. Each must include EITHER:
+            - id: The transaction ID
+            OR
+            - import_id: The transaction's import_id (used for lookup, cannot be changed)
+            And optionally any of:
             - account_id: New account ID
             - date: New date (YYYY-MM-DD)
             - amount: New amount in dollars (negative for outflow, positive for inflow)
+            - payee_id: New payee ID
             - payee_name: New payee name
-            - category_id: New category ID
-            - memo: New memo
+            - category_id: New category ID (use null with subtransactions to create a split)
+            - memo: New memo (max 500 chars)
             - cleared: 'cleared', 'uncleared', or 'reconciled'
             - approved: Whether the transaction is approved
-            - flag_color: Flag color ('red', 'orange', 'yellow', 'green', 'blue', 'purple', or null)
+            - flag_color: 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
+            - subtransactions: For creating a new split, list of dicts with: amount, payee_id, payee_name, category_id, memo
     """
     prepared = []
     for txn_input in transactions:
-        if "id" not in txn_input:
-            return json.dumps({"error": "Each transaction must include an 'id' field"})
-        txn: dict = {"id": txn_input["id"]}
+        if "id" not in txn_input and "import_id" not in txn_input:
+            return json.dumps({"error": "Each transaction must include either 'id' or 'import_id'"})
+        txn: dict = {}
+        if "id" in txn_input:
+            txn["id"] = txn_input["id"]
+        if "import_id" in txn_input:
+            txn["import_id"] = txn_input["import_id"]
         if "account_id" in txn_input:
             txn["account_id"] = txn_input["account_id"]
         if "date" in txn_input:
             txn["date"] = txn_input["date"]
         if "amount" in txn_input:
             txn["amount"] = dollars_to_milliunits(txn_input["amount"])
-        if "payee_name" in txn_input:
-            txn["payee_name"] = txn_input["payee_name"]
-        if "category_id" in txn_input:
-            txn["category_id"] = txn_input["category_id"]
-        if "memo" in txn_input:
-            txn["memo"] = txn_input["memo"]
-        if "cleared" in txn_input:
-            txn["cleared"] = txn_input["cleared"]
-        if "approved" in txn_input:
-            txn["approved"] = txn_input["approved"]
-        if "flag_color" in txn_input:
-            txn["flag_color"] = txn_input["flag_color"]
+        for key in ("payee_id", "payee_name", "category_id", "memo", "cleared", "approved", "flag_color"):
+            if key in txn_input:
+                txn[key] = txn_input[key]
+        if txn_input.get("subtransactions"):
+            txn["subtransactions"] = [
+                _prepare_subtransaction(sub) for sub in txn_input["subtransactions"]
+            ]
         prepared.append(txn)
 
     txns = await _shared.cache.update_transactions(prepared, plan_id)

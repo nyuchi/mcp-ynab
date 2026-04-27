@@ -14,6 +14,7 @@ from src.models import (
     MoneyMovementGroup,
     Payee,
     PayeeLocation,
+    HybridTransaction,
     ScheduledTransaction,
     Transaction,
     User,
@@ -182,15 +183,39 @@ class YNABClient:
         category_id: str,
         plan_id: str,
         since_date: str | None = None,
+        type: str | None = None,
+        *,
+        last_knowledge_of_server: int | None = None,
+    ) -> list[HybridTransaction]:
+        params: dict[str, Any] = {}
+        if since_date:
+            params["since_date"] = since_date
+        if type:
+            params["type"] = type
+        params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
+        data = await self._get(
+            f"/plans/{plan_id}/categories/{category_id}/transactions",
+            params=params or None,
+        )
+        return [HybridTransaction.model_validate(t) for t in data["data"]["transactions"]]
+
+    async def get_transactions_by_month(
+        self,
+        month: str,
+        plan_id: str,
+        since_date: str | None = None,
+        type: str | None = None,
         *,
         last_knowledge_of_server: int | None = None,
     ) -> tuple[list[Transaction], int]:
         params: dict[str, Any] = {}
         if since_date:
             params["since_date"] = since_date
+        if type:
+            params["type"] = type
         params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
         data = await self._get(
-            f"/plans/{plan_id}/categories/{category_id}/transactions",
+            f"/plans/{plan_id}/months/{month}/transactions",
             params=params or None,
         )
         txns = [Transaction.model_validate(t) for t in data["data"]["transactions"]]
@@ -202,20 +227,21 @@ class YNABClient:
         payee_id: str,
         plan_id: str,
         since_date: str | None = None,
+        type: str | None = None,
         *,
         last_knowledge_of_server: int | None = None,
-    ) -> tuple[list[Transaction], int]:
+    ) -> list[HybridTransaction]:
         params: dict[str, Any] = {}
         if since_date:
             params["since_date"] = since_date
+        if type:
+            params["type"] = type
         params = self._add_knowledge(params or None, last_knowledge_of_server) or {}
         data = await self._get(
             f"/plans/{plan_id}/payees/{payee_id}/transactions",
             params=params or None,
         )
-        txns = [Transaction.model_validate(t) for t in data["data"]["transactions"]]
-        knowledge = data["data"]["server_knowledge"]
-        return txns, knowledge
+        return [HybridTransaction.model_validate(t) for t in data["data"]["transactions"]]
 
     async def create_transaction(self, transaction: dict, plan_id: str) -> Transaction:
         data = await self._post(
@@ -258,6 +284,10 @@ class YNABClient:
     async def delete_transaction(self, transaction_id: str, plan_id: str) -> Transaction:
         data = await self._delete(f"/plans/{plan_id}/transactions/{transaction_id}")
         return Transaction.model_validate(data["data"]["transaction"])
+
+    async def import_transactions(self, plan_id: str) -> list[str]:
+        data = await self._post(f"/plans/{plan_id}/transactions/import", json={})
+        return data["data"]["transaction_ids"]
 
     # ── Categories ───────────────────────────────────────────
 

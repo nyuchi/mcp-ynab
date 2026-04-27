@@ -557,7 +557,7 @@ class TestSearchTransactions:
         ])
         result = json.loads(await search_transactions(plan_id="bud-1", query="whole"))
         assert len(result) == 1
-        assert result[0]["payee"] == "Whole Foods"
+        assert result[0]["payee_name"] == "Whole Foods"
 
     @pytest.mark.asyncio
     async def test_matches_memo(self, mock_cache):

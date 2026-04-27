@@ -24,28 +24,21 @@ class TestTransaction:
         result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
         assert result["amount"] == -50250
 
-    def test_display_dump_aliases_fields(self):
+    def test_display_dump_uses_raw_field_names(self):
         t = Transaction(id="t1", date="2026-03-15", payee_name="Store",
                          category_name="Food", account_name="Checking")
         result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
-        assert result["payee"] == "Store"
-        assert result["category"] == "Food"
-        assert result["account"] == "Checking"
-        assert "payee_name" not in result
+        assert result["payee_name"] == "Store"
+        assert result["category_name"] == "Food"
+        assert result["account_name"] == "Checking"
 
-    def test_display_dump_excludes_internal_fields(self):
+    def test_display_dump_returns_all_fields(self):
         t = Transaction(id="t1", date="2026-03-15", deleted=True, account_id="a1",
                          subtransactions=[], import_id="imp1", flag_name="Red")
         result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
-        for excluded in ["deleted", "account_id", "subtransactions", "import_id", "flag_name"]:
-            assert excluded not in result
-
-    def test_display_dump_expected_keys(self):
-        t = Transaction(id="t1", date="2026-03-15")
-        result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
-        expected_keys = {"id", "date", "amount", "memo", "cleared", "approved",
-                         "flag_color", "payee_id", "payee", "category_id", "category", "account"}
-        assert set(result.keys()) == expected_keys
+        for field in ["deleted", "account_id", "subtransactions", "import_id",
+                      "flag_name", "matched_transaction_id", "debt_transaction_type"]:
+            assert field in result
 
     def test_roundtrip_preserves_all_fields(self):
         t = Transaction(id="t1", date="2026-03-15", amount=-50250,
@@ -175,7 +168,7 @@ class TestMonthDetail:
 
 
 class TestScheduledTransaction:
-    def test_display_dump_aliases(self):
+    def test_display_dump_uses_raw_field_names(self):
         st = ScheduledTransaction(
             id="st1", date_next="2026-04-01", frequency="monthly",
             amount=-100000, payee_name="Netflix", category_name="Entertainment",
@@ -183,17 +176,17 @@ class TestScheduledTransaction:
         )
         result = st.model_dump(by_alias=True, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
         assert result["amount"] == -100000
-        assert result["payee"] == "Netflix"
-        assert result["category"] == "Entertainment"
-        assert result["account"] == "Checking"
+        assert result["payee_name"] == "Netflix"
+        assert result["category_name"] == "Entertainment"
+        assert result["account_name"] == "Checking"
 
-    def test_display_dump_excludes_internal_fields(self):
+    def test_display_dump_returns_all_fields(self):
         st = ScheduledTransaction(id="st1", deleted=True, account_id="a1",
                                   payee_id="p1", category_id="c1")
         result = st.model_dump(by_alias=True, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
-        for excluded in ["deleted", "account_id", "payee_id", "category_id",
-                         "date_first", "flag_color", "flag_name", "subtransactions"]:
-            assert excluded not in result
+        for field in ["deleted", "account_id", "payee_id", "category_id",
+                      "date_first", "flag_color", "flag_name", "subtransactions"]:
+            assert field in result
 
 
 class TestUser:

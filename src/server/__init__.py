@@ -6,9 +6,10 @@ from src.server.plans import list_plans, get_plan, get_plan_settings
 from src.server.accounts import list_accounts, create_account, get_account
 from src.server.transactions import (
     list_transactions, get_transaction, get_transactions_by_account,
-    get_transactions_by_category, get_transactions_by_payee,
+    get_transactions_by_category, get_transactions_by_month, get_transactions_by_payee,
     search_transactions, create_transaction, create_transactions,
     update_transaction, delete_transaction, update_transactions,
+    import_transactions,
 )
 from src.server.categories import (
     list_categories, get_category, create_category, update_category,
@@ -32,9 +33,10 @@ __all__ = [
     "list_plans", "get_plan", "get_plan_settings",
     "list_accounts", "create_account", "get_account",
     "list_transactions", "get_transaction", "get_transactions_by_account",
-    "get_transactions_by_category", "get_transactions_by_payee",
+    "get_transactions_by_category", "get_transactions_by_month", "get_transactions_by_payee",
     "search_transactions", "create_transaction", "create_transactions",
     "update_transaction", "delete_transaction", "update_transactions",
+    "import_transactions",
     "list_categories", "get_category", "create_category", "update_category",
     "create_category_group", "update_category_group",
     "get_category_for_month", "update_category_for_month",

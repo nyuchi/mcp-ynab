@@ -23,6 +23,7 @@ from src.models import (
     MoneyMovementGroup,
     Payee,
     PayeeLocation,
+    HybridTransaction,
     ScheduledTransaction,
     Transaction,
     User,
@@ -318,11 +319,16 @@ class CacheService:
         account_id: str,
         plan_id: str,
         since_date: str | None = None,
+        type: str | None = None,
     ) -> list[Transaction]:
         txns = await self._sync_transactions(plan_id)
         txns = [t for t in txns if t.account_id == account_id]
         if since_date:
             txns = [t for t in txns if t.date >= since_date]
+        if type == "uncategorized":
+            txns = [t for t in txns if not t.category_id]
+        elif type == "unapproved":
+            txns = [t for t in txns if not t.approved]
         return txns
 
     async def get_transactions_by_category(
@@ -330,11 +336,22 @@ class CacheService:
         category_id: str,
         plan_id: str,
         since_date: str | None = None,
+        type: str | None = None,
+    ) -> list[HybridTransaction]:
+        return await self.client.get_transactions_by_category(
+            category_id, plan_id, since_date=since_date, type=type
+        )
+
+    async def get_transactions_by_month(
+        self,
+        month: str,
+        plan_id: str,
+        since_date: str | None = None,
+        type: str | None = None,
     ) -> list[Transaction]:
-        txns = await self._sync_transactions(plan_id)
-        txns = [t for t in txns if t.category_id == category_id]
-        if since_date:
-            txns = [t for t in txns if t.date >= since_date]
+        txns, _ = await self.client.get_transactions_by_month(
+            month, plan_id, since_date=since_date, type=type
+        )
         return txns
 
     async def get_transactions_by_payee(
@@ -342,12 +359,11 @@ class CacheService:
         payee_id: str,
         plan_id: str,
         since_date: str | None = None,
-    ) -> list[Transaction]:
-        txns = await self._sync_transactions(plan_id)
-        txns = [t for t in txns if t.payee_id == payee_id]
-        if since_date:
-            txns = [t for t in txns if t.date >= since_date]
-        return txns
+        type: str | None = None,
+    ) -> list[HybridTransaction]:
+        return await self.client.get_transactions_by_payee(
+            payee_id, plan_id, since_date=since_date, type=type
+        )
 
     # Transaction mutations
 
@@ -381,6 +397,11 @@ class CacheService:
         txn = await self.client.delete_transaction(transaction_id, plan_id)
         await self.delta.upsert_entities(plan_id, ENTITY_TRANSACTION, [txn])
         return txn
+
+    async def import_transactions(self, plan_id: str) -> list[str]:
+        ids = await self.client.import_transactions(plan_id)
+        await self.delta.invalidate_knowledge(plan_id, ENDPOINT_TRANSACTIONS)
+        return ids
 
     # Categories (delta synced)
 
