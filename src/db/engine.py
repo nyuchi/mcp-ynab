@@ -1,11 +1,10 @@
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import event, inspect, text
 
 from src.db.tables import Base
 
 _engine: AsyncEngine | None = None
-_session_factory: sessionmaker | None = None
+_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 def _set_wal_mode(dbapi_conn, connection_record):
@@ -23,10 +22,24 @@ async def init_db(db_path: str) -> None:
 
     event.listen(_engine.sync_engine, "connect", _set_wal_mode)
 
+    # Migrate: drop stale cache tables — cache rebuilds automatically
     async with _engine.begin() as conn:
+        def _migrate_cache_tables(connection):
+            insp = inspect(connection)
+            # Drop old "cached_entities" (renamed to "cached_entity")
+            if insp.has_table("cached_entities"):
+                connection.execute(text("DROP TABLE cached_entities"))
+            # Drop tables with old budget_id column
+            for table in ("cached_entity", "server_knowledge"):
+                if insp.has_table(table):
+                    columns = [c["name"] for c in insp.get_columns(table)]
+                    if "budget_id" in columns:
+                        connection.execute(text(f"DROP TABLE {table}"))
+
+        await conn.run_sync(_migrate_cache_tables)
         await conn.run_sync(Base.metadata.create_all)
 
-    _session_factory = sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+    _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
 
 
 def get_session() -> AsyncSession:
