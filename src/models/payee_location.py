@@ -2,6 +2,8 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
+PAYEE_LOCATION_DEFAULT_EXCLUDE: set[str] = {"deleted"}
+
 
 class PayeeLocation(YNABBaseModel):
     id: str = Field()

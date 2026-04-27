@@ -2,7 +2,9 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
-SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE: set[str] = set()
+SCHEDULED_TRANSACTION_DEFAULT_EXCLUDE: set[str] = {"flag_name", "deleted"}
+
+SCHEDULED_SUBTRANSACTION_DEFAULT_EXCLUDE: set[str] = {"deleted"}
 
 
 class ScheduledSubtransaction(YNABBaseModel):

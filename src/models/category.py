@@ -2,12 +2,19 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
-# Fields excluded from the standard category list display
-CATEGORY_LIST_EXCLUDE: set[str] = set()
+CATEGORY_DEFAULT_EXCLUDE: set[str] = {
+    "original_category_group_id",
+    "goal_target_month",
+    "goal_creation_month",
+    "goal_snoozed_at",
+    "goal_needs_whole_amount",
+    "goal_day",
+    "goal_cadence",
+    "goal_cadence_frequency",
+    "deleted",
+}
 
-# Fields included in the category detail display (get_category_for_month)
-# NOTE: Empty set means include all fields (None is passed to model_dump)
-CATEGORY_DETAIL_INCLUDE: set[str] = set()
+CATEGORY_GROUP_DEFAULT_EXCLUDE: set[str] = {"deleted"}
 
 
 class Category(YNABBaseModel):

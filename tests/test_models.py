@@ -10,36 +10,35 @@ from src.models import (
     ScheduledTransaction,
     Transaction,
 )
-from src.models.account import ACCOUNT_DISPLAY_EXCLUDE
-from src.models.plan import PLAN_SUMMARY_DISPLAY_EXCLUDE
-from src.models.category import CATEGORY_DETAIL_INCLUDE, CATEGORY_LIST_EXCLUDE
-from src.models.month import MONTH_DISPLAY_EXCLUDE
-from src.models.payee import PAYEE_DISPLAY_EXCLUDE
-from src.models.scheduled_transaction import SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE
-from src.models.transaction import TRANSACTION_DISPLAY_EXCLUDE
+from src.models.account import ACCOUNT_DEFAULT_EXCLUDE
+from src.models.category import CATEGORY_DEFAULT_EXCLUDE
+from src.models.month import MONTH_DEFAULT_EXCLUDE
+from src.models.payee import PAYEE_DEFAULT_EXCLUDE
+from src.models.plan import PLAN_DEFAULT_EXCLUDE
+from src.models.scheduled_transaction import SCHEDULED_TRANSACTION_DEFAULT_EXCLUDE
+from src.models.transaction import TRANSACTION_DEFAULT_EXCLUDE
 
 
 class TestTransaction:
-    def test_display_dump_keeps_amount_as_int(self):
-        t = Transaction(id="t1", date="2026-03-15", amount=-50250)
-        result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    def test_default_exclude_keeps_useful_fields(self):
+        t = Transaction(id="t1", date="2026-03-15", amount=-50250,
+                        account_name="Checking", payee_name="Store", category_name="Food")
+        result = t.model_dump(by_alias=True, exclude=TRANSACTION_DEFAULT_EXCLUDE)
         assert result["amount"] == -50250
-
-    def test_display_dump_uses_raw_field_names(self):
-        t = Transaction(id="t1", date="2026-03-15", payee_name="Store",
-                         category_name="Food", account_name="Checking")
-        result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+        assert result["account_name"] == "Checking"
         assert result["payee_name"] == "Store"
         assert result["category_name"] == "Food"
-        assert result["account_name"] == "Checking"
 
-    def test_display_dump_returns_all_fields(self):
-        t = Transaction(id="t1", date="2026-03-15", deleted=True, account_id="a1",
-                         subtransactions=[], import_id="imp1", flag_name="Red")
-        result = t.model_dump(by_alias=True, exclude=TRANSACTION_DISPLAY_EXCLUDE)
-        for field in ["deleted", "account_id", "subtransactions", "import_id",
-                      "flag_name", "matched_transaction_id", "debt_transaction_type"]:
-            assert field in result
+    def test_default_exclude_hides_noisy_fields(self):
+        t = Transaction(id="t1", date="2026-03-15", deleted=True,
+                        import_id="imp1", flag_name="Red",
+                        matched_transaction_id="m1", debt_transaction_type="payment")
+        result = t.model_dump(by_alias=True, exclude=TRANSACTION_DEFAULT_EXCLUDE)
+        for hidden in ["deleted", "import_id", "import_payee_name",
+                       "import_payee_name_original", "flag_name",
+                       "matched_transaction_id", "transfer_transaction_id",
+                       "debt_transaction_type"]:
+            assert hidden not in result
 
     def test_roundtrip_preserves_all_fields(self):
         t = Transaction(id="t1", date="2026-03-15", amount=-50250,
@@ -56,14 +55,17 @@ class TestTransaction:
 
 
 class TestAccount:
-    def test_display_dump_returns_all_fields(self):
+    def test_default_exclude_hides_noisy_fields(self):
         a = Account(id="a1", name="Checking", type="checking", deleted=True)
-        result = a.model_dump(by_alias=True, exclude=ACCOUNT_DISPLAY_EXCLUDE)
-        assert "deleted" in result
-        assert "note" in result
-        assert "transfer_payee_id" in result
-        assert "direct_import_linked" in result
-        assert "debt_interest_rates" in result
+        result = a.model_dump(by_alias=True, exclude=ACCOUNT_DEFAULT_EXCLUDE)
+        for hidden in ["deleted", "direct_import_linked", "direct_import_in_error",
+                       "last_reconciled_at", "debt_original_balance",
+                       "debt_interest_rates", "debt_minimum_payments",
+                       "debt_escrow_amounts"]:
+            assert hidden not in result
+        assert "id" in result
+        assert "name" in result
+        assert "balance" in result
 
     def test_roundtrip_preserves_deleted(self):
         a = Account(id="a1", name="Checking", type="checking", deleted=True)
@@ -73,23 +75,18 @@ class TestAccount:
 
 
 class TestCategory:
-    def test_list_exclude_returns_all_fields_when_empty(self):
+    def test_default_exclude_hides_advanced_goal_fields(self):
         c = Category(id="c1", category_group_id="g1", name="Food",
-                     goal_type="TB", goal_target=500000, deleted=True)
-        result = c.model_dump(by_alias=True, exclude=CATEGORY_LIST_EXCLUDE)
-        assert "category_group_id" in result
-        assert "goal_type" in result
-        assert "goal_target" in result
-        assert "deleted" in result
-
-    def test_detail_include_returns_all_fields_when_empty(self):
-        c = Category(id="c1", category_group_id="g1", name="Food",
-                     goal_type="TB", goal_target=500000, goal_percentage_complete=50)
-        result = c.model_dump(by_alias=True, include=CATEGORY_DETAIL_INCLUDE or None)
+                     goal_type="TB", goal_target=500000, goal_cadence=1,
+                     goal_day=15, deleted=True)
+        result = c.model_dump(by_alias=True, exclude=CATEGORY_DEFAULT_EXCLUDE)
+        for hidden in ["deleted", "original_category_group_id", "goal_target_month",
+                       "goal_creation_month", "goal_snoozed_at",
+                       "goal_needs_whole_amount", "goal_day", "goal_cadence",
+                       "goal_cadence_frequency"]:
+            assert hidden not in result
         assert result["goal_type"] == "TB"
         assert result["goal_target"] == 500000
-        assert result["goal_percentage_complete"] == 50
-        assert "hidden" in result
 
     def test_roundtrip_preserves_all_fields(self):
         c = Category(id="c1", category_group_id="g1", name="Food", budgeted=500000)
@@ -114,12 +111,12 @@ class TestCategoryGroup:
 
 
 class TestPlanSummary:
-    def test_display_dump_returns_all_fields(self):
+    def test_default_exclude_hides_last_modified(self):
         b = PlanSummary(id="b1", name="My Budget", last_modified_on="2026-03-15")
-        result = b.model_dump(by_alias=True, exclude=PLAN_SUMMARY_DISPLAY_EXCLUDE)
+        result = b.model_dump(by_alias=True, exclude=PLAN_DEFAULT_EXCLUDE)
         assert result["id"] == "b1"
         assert result["name"] == "My Budget"
-        assert result["last_modified_on"] == "2026-03-15"
+        assert "last_modified_on" not in result
 
 
 class TestPlanDetail:
@@ -131,20 +128,20 @@ class TestPlanDetail:
 
 
 class TestPayee:
-    def test_display_dump_returns_all_fields(self):
+    def test_default_exclude_hides_deleted(self):
         p = Payee(id="p1", name="Amazon", transfer_account_id="ta1")
-        result = p.model_dump(by_alias=True, exclude=PAYEE_DISPLAY_EXCLUDE)
+        result = p.model_dump(by_alias=True, exclude=PAYEE_DEFAULT_EXCLUDE)
         assert result["id"] == "p1"
         assert result["name"] == "Amazon"
         assert result["transfer_account_id"] == "ta1"
-        assert "deleted" in result
+        assert "deleted" not in result
 
 
 class TestMonthSummary:
-    def test_display_dump_returns_all_fields(self):
+    def test_default_exclude_hides_deleted(self):
         m = MonthSummary(month="2026-03-01", deleted=True, age_of_money=45)
-        result = m.model_dump(by_alias=True, exclude=MONTH_DISPLAY_EXCLUDE)
-        assert "deleted" in result
+        result = m.model_dump(by_alias=True, exclude=MONTH_DEFAULT_EXCLUDE)
+        assert "deleted" not in result
         assert "note" in result
         assert result["age_of_money"] == 45
 
@@ -157,36 +154,38 @@ class TestMonthSummary:
 
 
 class TestMonthDetail:
-    def test_display_dump_includes_categories(self):
+    def test_default_exclude_keeps_categories(self):
         cat = Category(id="c1", category_group_id="g1", name="Food", budgeted=500000)
         m = MonthDetail(month="2026-03-01", income=5000000, categories=[cat])
-        result = m.model_dump(by_alias=True, exclude=MONTH_DISPLAY_EXCLUDE)
+        result = m.model_dump(by_alias=True, exclude=MONTH_DEFAULT_EXCLUDE)
         assert result["income"] == 5000000
         assert len(result["categories"]) == 1
-        assert "deleted" in result
         assert "note" in result
         assert "age_of_money" in result
+        assert "deleted" not in result
 
 
 class TestScheduledTransaction:
-    def test_display_dump_uses_raw_field_names(self):
+    def test_default_exclude_keeps_useful_fields(self):
         st = ScheduledTransaction(
             id="st1", date_next="2026-04-01", frequency="monthly",
             amount=-100000, payee_name="Netflix", category_name="Entertainment",
             account_name="Checking",
         )
-        result = st.model_dump(by_alias=True, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
+        result = st.model_dump(by_alias=True, exclude=SCHEDULED_TRANSACTION_DEFAULT_EXCLUDE)
         assert result["amount"] == -100000
         assert result["payee_name"] == "Netflix"
         assert result["category_name"] == "Entertainment"
         assert result["account_name"] == "Checking"
 
-    def test_display_dump_returns_all_fields(self):
+    def test_default_exclude_hides_noisy_fields(self):
         st = ScheduledTransaction(id="st1", deleted=True, account_id="a1",
                                   payee_id="p1", category_id="c1")
-        result = st.model_dump(by_alias=True, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
-        for field in ["deleted", "account_id", "payee_id", "category_id",
-                      "date_first", "flag_color", "flag_name", "subtransactions"]:
+        result = st.model_dump(by_alias=True, exclude=SCHEDULED_TRANSACTION_DEFAULT_EXCLUDE)
+        assert "deleted" not in result
+        assert "flag_name" not in result
+        # Other fields stay
+        for field in ["account_id", "payee_id", "category_id", "subtransactions"]:
             assert field in result
 
 
@@ -197,8 +196,3 @@ class TestUser:
         raw = u.model_dump()
         u2 = User.model_validate(raw)
         assert u2.id == "user-123"
-
-    def test_from_api_response(self):
-        from src.models.user import User
-        u = User.model_validate({"id": "abc-def-ghi"})
-        assert u.id == "abc-def-ghi"

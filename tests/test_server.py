@@ -122,7 +122,26 @@ class TestGetPlan:
         mock_cache.get_plan = AsyncMock(return_value=_make_plan_detail())
         result = json.loads(await get_plan(plan_id="bud-1"))
         assert result["id"] == "bud-1"
+        # last_modified_on is excluded by default; pass exclude_fields=[] to include it
+        assert "last_modified_on" not in result
+
+    @pytest.mark.asyncio
+    async def test_exclude_fields_empty_returns_all(self, mock_cache):
+        from src.server import get_plan
+
+        mock_cache.get_plan = AsyncMock(return_value=_make_plan_detail())
+        result = json.loads(await get_plan(plan_id="bud-1", exclude_fields=[]))
         assert result["last_modified_on"] == "2026-03-15"
+
+    @pytest.mark.asyncio
+    async def test_exclude_fields_custom_overrides_default(self, mock_cache):
+        from src.server import get_plan
+
+        mock_cache.get_plan = AsyncMock(return_value=_make_plan_detail())
+        # Pass a custom list — defaults are ignored, only `name` excluded
+        result = json.loads(await get_plan(plan_id="bud-1", exclude_fields=["name"]))
+        assert result["last_modified_on"] == "2026-03-15"
+        assert "name" not in result
 
 
 # ── Account Tools ─────────────────────────────────────────────
@@ -137,7 +156,8 @@ class TestListAccounts:
         result = json.loads(await list_accounts(plan_id="bud-1"))
         assert len(result) == 1
         assert result[0]["name"] == "Checking"
-        assert "deleted" in result[0]
+        # `deleted` is excluded by default; pass exclude_fields=[] to include it
+        assert "deleted" not in result[0]
 
 
 class TestGetAccount:

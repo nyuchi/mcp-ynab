@@ -1,6 +1,5 @@
 import json
 
-from src.models.transaction import TRANSACTION_DISPLAY_EXCLUDE
 from src.server import _shared
 from src.server._shared import dollars_to_milliunits, serialize, serialize_list
 
@@ -20,6 +19,7 @@ async def list_transactions(
     plan_id: str,
     since_date: str | None = None,
     type: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """List transactions in a plan. Can filter by date and type.
 
@@ -27,22 +27,32 @@ async def list_transactions(
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
         type: Filter by 'uncategorized' or 'unapproved'
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_transactions(plan_id, since_date, type)
-    return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(transactions, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def get_transaction(transaction_id: str, plan_id: str) -> str:
+async def get_transaction(
+    transaction_id: str,
+    plan_id: str,
+    exclude_fields: list[str] | None = None,
+) -> str:
     """Get a specific transaction by ID.
 
     Args:
         transaction_id: The transaction ID
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     txn = await _shared.cache.get_transaction(transaction_id, plan_id)
-    return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -52,6 +62,7 @@ async def get_transactions_by_account(
     plan_id: str,
     since_date: str | None = None,
     type: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Get transactions for a specific account, excluding pending transactions.
 
@@ -60,11 +71,14 @@ async def get_transactions_by_account(
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
         type: Filter by 'uncategorized' or 'unapproved'
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_transactions_by_account(
         account_id, plan_id, since_date, type
     )
-    return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(transactions, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -74,6 +88,7 @@ async def get_transactions_by_category(
     plan_id: str,
     since_date: str | None = None,
     type: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Get all transactions for a specific category, excluding pending transactions.
 
@@ -86,11 +101,14 @@ async def get_transactions_by_category(
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
         type: Filter by 'uncategorized' or 'unapproved'
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_transactions_by_category(
         category_id, plan_id, since_date, type
     )
-    return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(transactions, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -100,6 +118,7 @@ async def get_transactions_by_month(
     plan_id: str,
     since_date: str | None = None,
     type: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Get all transactions for a specific plan month, excluding pending transactions.
 
@@ -108,11 +127,14 @@ async def get_transactions_by_month(
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
         type: Filter by 'uncategorized' or 'unapproved'
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_transactions_by_month(
         month, plan_id, since_date, type
     )
-    return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(transactions, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -122,6 +144,7 @@ async def get_transactions_by_payee(
     plan_id: str,
     since_date: str | None = None,
     type: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Get all transactions for a specific payee, excluding pending transactions.
 
@@ -134,11 +157,14 @@ async def get_transactions_by_payee(
         plan_id: The plan ID (use list_plans to find available IDs)
         since_date: Only return transactions on or after this date (YYYY-MM-DD)
         type: Filter by 'uncategorized' or 'unapproved'
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_transactions_by_payee(
         payee_id, plan_id, since_date, type
     )
-    return serialize_list(transactions, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(transactions, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -149,6 +175,7 @@ async def search_transactions(
     since_date: str | None = None,
     amount_min: float | None = None,
     amount_max: float | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Search transactions by text across payee, memo, and category fields.
 
@@ -158,6 +185,9 @@ async def search_transactions(
         since_date: Only search transactions on or after this date (YYYY-MM-DD)
         amount_min: Minimum amount in dollars (e.g. -100.00). Filters by absolute value if both min and max are positive, otherwise by raw value.
         amount_max: Maximum amount in dollars (e.g. -10.00)
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_transactions(plan_id, since_date)
     q = query.lower()
@@ -175,7 +205,7 @@ async def search_transactions(
 
         matches.append(t)
 
-    return serialize_list(matches, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(matches, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -194,6 +224,7 @@ async def create_transaction(
     flag_color: str | None = None,
     import_id: str | None = None,
     subtransactions: list[dict] | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Create a new transaction. Future-dated transactions are not permitted (use scheduled transactions instead).
 
@@ -211,6 +242,9 @@ async def create_transaction(
         flag_color: 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
         import_id: Unique import identifier (max 36 chars). Used for matching against imported transactions.
         subtransactions: For splits, an array of dicts with keys: amount (dollars, required), payee_id, payee_name, category_id, memo
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transaction: dict = {
         "account_id": account_id,
@@ -237,7 +271,7 @@ async def create_transaction(
         transaction["memo"] = memo
 
     txn = await _shared.cache.create_transaction(transaction, plan_id)
-    return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -246,6 +280,7 @@ async def create_transactions(
     plan_id: str,
     account_id: str,
     transactions: list[dict],
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Create multiple transactions in a single API call. Ideal for bulk imports.
 
@@ -268,6 +303,9 @@ async def create_transactions(
             - flag_color: (optional) 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
             - import_id: (optional) Unique import identifier (max 36 chars)
             - subtransactions: (optional) For splits, a list of subtransaction dicts with: amount, payee_id, payee_name, category_id, memo
+        exclude_fields: Optional list of field names to exclude from each created transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     prepared = []
     for txn_input in transactions:
@@ -288,7 +326,7 @@ async def create_transactions(
         prepared.append(txn)
 
     txns = await _shared.cache.create_transactions(prepared, plan_id)
-    return serialize_list(txns, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(txns, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -307,6 +345,7 @@ async def update_transaction(
     approved: bool | None = None,
     flag_color: str | None = None,
     subtransactions: list[dict] | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Update an existing transaction. Only provide the fields you want to change.
 
@@ -328,6 +367,9 @@ async def update_transaction(
         approved: Whether the transaction is approved
         flag_color: 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
         subtransactions: For creating a new split, list of dicts with: amount, payee_id, payee_name, category_id, memo
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transaction: dict = {}
     if account_id is not None:
@@ -356,20 +398,27 @@ async def update_transaction(
         ]
 
     txn = await _shared.cache.update_transaction(transaction_id, transaction, plan_id)
-    return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def delete_transaction(transaction_id: str, plan_id: str) -> str:
+async def delete_transaction(
+    transaction_id: str,
+    plan_id: str,
+    exclude_fields: list[str] | None = None,
+) -> str:
     """Delete a transaction.
 
     Args:
         transaction_id: The transaction ID to delete
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     txn = await _shared.cache.delete_transaction(transaction_id, plan_id)
-    return serialize(txn, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -393,6 +442,7 @@ async def import_transactions(plan_id: str) -> str:
 async def update_transactions(
     plan_id: str,
     transactions: list[dict],
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Update multiple transactions in a single API call.
 
@@ -419,6 +469,9 @@ async def update_transactions(
             - approved: Whether the transaction is approved
             - flag_color: 'red', 'orange', 'yellow', 'green', 'blue', 'purple', or null
             - subtransactions: For creating a new split, list of dicts with: amount, payee_id, payee_name, category_id, memo
+        exclude_fields: Optional list of field names to exclude from each updated transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     prepared = []
     for txn_input in transactions:
@@ -445,4 +498,4 @@ async def update_transactions(
         prepared.append(txn)
 
     txns = await _shared.cache.update_transactions(prepared, plan_id)
-    return serialize_list(txns, exclude=TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(txns, exclude_fields=exclude_fields)

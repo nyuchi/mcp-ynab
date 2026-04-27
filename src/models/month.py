@@ -3,7 +3,7 @@ from pydantic import Field
 from src.models.common import YNABBaseModel
 from src.models.category import Category
 
-MONTH_DISPLAY_EXCLUDE: set[str] = set()
+MONTH_DEFAULT_EXCLUDE: set[str] = {"deleted"}
 
 
 class MonthSummary(YNABBaseModel):

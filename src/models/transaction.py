@@ -2,7 +2,22 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
-TRANSACTION_DISPLAY_EXCLUDE: set[str] = set()
+TRANSACTION_DEFAULT_EXCLUDE: set[str] = {
+    "flag_name",
+    "import_id",
+    "import_payee_name",
+    "import_payee_name_original",
+    "matched_transaction_id",
+    "transfer_transaction_id",
+    "debt_transaction_type",
+    "deleted",
+}
+
+SUBTRANSACTION_DEFAULT_EXCLUDE: set[str] = {
+    "transfer_account_id",
+    "transfer_transaction_id",
+    "deleted",
+}
 
 
 class Subtransaction(YNABBaseModel):

@@ -1,33 +1,42 @@
-from src.models.scheduled_transaction import SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE
 from src.server import _shared
 from src.server._shared import dollars_to_milliunits, serialize, serialize_list
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def list_scheduled_transactions(plan_id: str) -> str:
+async def list_scheduled_transactions(
+    plan_id: str, exclude_fields: list[str] | None = None
+) -> str:
     """List all scheduled (recurring) transactions.
 
     Args:
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from each transaction.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     transactions = await _shared.cache.get_scheduled_transactions(plan_id)
-    return serialize_list(transactions, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize_list(transactions, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def get_scheduled_transaction(
-    scheduled_transaction_id: str, plan_id: str
+    scheduled_transaction_id: str,
+    plan_id: str,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Get a single scheduled transaction.
 
     Args:
         scheduled_transaction_id: The scheduled transaction ID
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     txn = await _shared.cache.get_scheduled_transaction(scheduled_transaction_id, plan_id)
-    return serialize(txn, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -43,6 +52,7 @@ async def create_scheduled_transaction(
     memo: str | None = None,
     flag_color: str | None = None,
     frequency: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Create a scheduled transaction (a transaction with a future date).
 
@@ -62,6 +72,9 @@ async def create_scheduled_transaction(
         frequency: One of 'never', 'daily', 'weekly', 'everyOtherWeek', 'twiceAMonth',
             'every4Weeks', 'monthly', 'everyOtherMonth', 'every3Months', 'every4Months',
             'twiceAYear', 'yearly', 'everyOtherYear'
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     scheduled: dict = {
         "account_id": account_id,
@@ -83,7 +96,7 @@ async def create_scheduled_transaction(
         scheduled["frequency"] = frequency
 
     txn = await _shared.cache.create_scheduled_transaction(scheduled, plan_id)
-    return serialize(txn, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -100,6 +113,7 @@ async def update_scheduled_transaction(
     memo: str | None = None,
     flag_color: str | None = None,
     frequency: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Update a scheduled transaction.
 
@@ -120,6 +134,9 @@ async def update_scheduled_transaction(
         frequency: One of 'never', 'daily', 'weekly', 'everyOtherWeek', 'twiceAMonth',
             'every4Weeks', 'monthly', 'everyOtherMonth', 'every3Months', 'every4Months',
             'twiceAYear', 'yearly', 'everyOtherYear'
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     scheduled: dict = {
         "account_id": account_id,
@@ -143,19 +160,24 @@ async def update_scheduled_transaction(
     txn = await _shared.cache.update_scheduled_transaction(
         scheduled_transaction_id, scheduled, plan_id
     )
-    return serialize(txn, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def delete_scheduled_transaction(
-    scheduled_transaction_id: str, plan_id: str
+    scheduled_transaction_id: str,
+    plan_id: str,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Delete a scheduled transaction.
 
     Args:
         scheduled_transaction_id: The scheduled transaction ID to delete
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     txn = await _shared.cache.delete_scheduled_transaction(scheduled_transaction_id, plan_id)
-    return serialize(txn, exclude=SCHEDULED_TRANSACTION_DISPLAY_EXCLUDE)
+    return serialize(txn, exclude_fields=exclude_fields)

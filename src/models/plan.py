@@ -11,7 +11,7 @@ from src.models.payee_location import PayeeLocation
 from src.models.scheduled_transaction import ScheduledSubtransaction, ScheduledTransaction
 from src.models.transaction import Subtransaction, Transaction
 
-PLAN_SUMMARY_DISPLAY_EXCLUDE: set[str] = set()
+PLAN_DEFAULT_EXCLUDE: set[str] = {"last_modified_on"}
 
 
 class DateFormat(YNABBaseModel):

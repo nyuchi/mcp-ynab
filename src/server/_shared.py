@@ -8,6 +8,38 @@ from mcp.server.fastmcp import FastMCP
 from src.cache.service import CacheService
 from src.config import Settings
 from src.db.engine import init_db
+from src.models.account import ACCOUNT_DEFAULT_EXCLUDE, Account
+from src.models.category import (
+    CATEGORY_DEFAULT_EXCLUDE,
+    CATEGORY_GROUP_DEFAULT_EXCLUDE,
+    Category,
+    CategoryGroup,
+)
+from src.models.common import YNABBaseModel
+from src.models.money_movement import (
+    MONEY_MOVEMENT_DEFAULT_EXCLUDE,
+    MONEY_MOVEMENT_GROUP_DEFAULT_EXCLUDE,
+    MoneyMovement,
+    MoneyMovementGroup,
+)
+from src.models.month import MONTH_DEFAULT_EXCLUDE, MonthDetail, MonthSummary
+from src.models.payee import PAYEE_DEFAULT_EXCLUDE, Payee
+from src.models.payee_location import PAYEE_LOCATION_DEFAULT_EXCLUDE, PayeeLocation
+from src.models.plan import PLAN_DEFAULT_EXCLUDE, PlanDetail, PlanSettings, PlanSummary
+from src.models.scheduled_transaction import (
+    SCHEDULED_SUBTRANSACTION_DEFAULT_EXCLUDE,
+    SCHEDULED_TRANSACTION_DEFAULT_EXCLUDE,
+    ScheduledSubtransaction,
+    ScheduledTransaction,
+)
+from src.models.transaction import (
+    SUBTRANSACTION_DEFAULT_EXCLUDE,
+    TRANSACTION_DEFAULT_EXCLUDE,
+    HybridTransaction,
+    Subtransaction,
+    Transaction,
+)
+from src.models.user import User
 from src.ynab_client import YNABClient, YNABError
 
 try:
@@ -23,19 +55,67 @@ cache = CacheService(client, settings)
 _db_initialized = False
 
 
+# Default exclude sets per model. Used when a tool is called without an explicit
+# `exclude_fields` argument. See FIELDS.md for the full list per model.
+DEFAULT_EXCLUDES: dict[type[YNABBaseModel], set[str]] = {
+    Account: ACCOUNT_DEFAULT_EXCLUDE,
+    Category: CATEGORY_DEFAULT_EXCLUDE,
+    CategoryGroup: CATEGORY_GROUP_DEFAULT_EXCLUDE,
+    HybridTransaction: TRANSACTION_DEFAULT_EXCLUDE,
+    MoneyMovement: MONEY_MOVEMENT_DEFAULT_EXCLUDE,
+    MoneyMovementGroup: MONEY_MOVEMENT_GROUP_DEFAULT_EXCLUDE,
+    MonthDetail: MONTH_DEFAULT_EXCLUDE,
+    MonthSummary: MONTH_DEFAULT_EXCLUDE,
+    Payee: PAYEE_DEFAULT_EXCLUDE,
+    PayeeLocation: PAYEE_LOCATION_DEFAULT_EXCLUDE,
+    PlanDetail: PLAN_DEFAULT_EXCLUDE,
+    PlanSettings: set(),
+    PlanSummary: PLAN_DEFAULT_EXCLUDE,
+    ScheduledSubtransaction: SCHEDULED_SUBTRANSACTION_DEFAULT_EXCLUDE,
+    ScheduledTransaction: SCHEDULED_TRANSACTION_DEFAULT_EXCLUDE,
+    Subtransaction: SUBTRANSACTION_DEFAULT_EXCLUDE,
+    Transaction: TRANSACTION_DEFAULT_EXCLUDE,
+    User: set(),
+}
+
+
 def dollars_to_milliunits(amount: float) -> int:
     """Convert a dollar amount to YNAB milliunits (1000 = $1.00)."""
     return round(amount * 1000)
 
 
-def serialize(model, **kwargs) -> str:
-    """Serialize a Pydantic model to a JSON string."""
-    return json.dumps(model.model_dump(by_alias=True, **kwargs), indent=2)
+def _resolve_exclude(
+    model_class: type[YNABBaseModel], exclude_fields: list[str] | None
+) -> set[str]:
+    """Pick the exclude set: caller's list if provided, otherwise the model default."""
+    if exclude_fields is None:
+        return DEFAULT_EXCLUDES.get(model_class, set())
+    return set(exclude_fields)
 
 
-def serialize_list(models, **kwargs) -> str:
-    """Serialize a list of Pydantic models to a JSON string."""
-    return json.dumps([m.model_dump(by_alias=True, **kwargs) for m in models], indent=2)
+def serialize(model, *, exclude_fields: list[str] | None = None) -> str:
+    """Serialize a Pydantic model to a JSON string.
+
+    By default, excludes the model's standard noisy/rarely-used fields. Pass
+    `exclude_fields=[]` to return all fields, or a custom list to override.
+    """
+    exclude = _resolve_exclude(type(model), exclude_fields)
+    return json.dumps(model.model_dump(by_alias=True, exclude=exclude), indent=2)
+
+
+def serialize_list(models, *, exclude_fields: list[str] | None = None) -> str:
+    """Serialize a list of Pydantic models to a JSON string.
+
+    By default, excludes the model's standard noisy/rarely-used fields. Pass
+    `exclude_fields=[]` to return all fields, or a custom list to override.
+    """
+    if not models:
+        return "[]"
+    exclude = _resolve_exclude(type(models[0]), exclude_fields)
+    return json.dumps(
+        [m.model_dump(by_alias=True, exclude=exclude) for m in models],
+        indent=2,
+    )
 
 
 async def _ensure_db():

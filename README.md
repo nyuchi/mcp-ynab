@@ -54,14 +54,22 @@ See [mcp-ynab.com](https://mcp-ynab.com) for config file locations and troublesh
 | Group | Tools |
 |-------|-------|
 | **User** | `get_user` |
-| **Plans** | `list_plans`, `get_plan` |
-| **Accounts** | `list_accounts`, `get_account` |
-| **Transactions** | `list_transactions`, `get_transaction`, `get_transactions_by_account`, `get_transactions_by_category`, `get_transactions_by_payee`, `search_transactions`, `create_transaction`, `create_transactions`, `update_transaction`, `update_transactions`, `delete_transaction` |
+| **Plans** | `list_plans`, `get_plan`, `get_plan_settings` |
+| **Accounts** | `list_accounts`, `get_account`, `create_account` |
 | **Categories** | `list_categories`, `get_category`, `create_category`, `update_category`, `create_category_group`, `update_category_group`, `get_category_for_month`, `update_category_for_month` |
-| **Payees** | `list_payees` |
+| **Payees** | `list_payees`, `get_payee`, `update_payee` |
+| **Payee Locations** | `list_payee_locations`, `get_payee_location`, `get_payee_locations_by_payee` |
 | **Months** | `list_months`, `get_month` |
-| **Scheduled** | `list_scheduled_transactions` |
+| **Money Movements** | `list_money_movements`, `get_money_movements_for_month`, `list_money_movement_groups`, `get_money_movement_groups_for_month` |
+| **Transactions** | `list_transactions`, `get_transaction`, `get_transactions_by_account`, `get_transactions_by_category`, `get_transactions_by_month`, `get_transactions_by_payee`, `search_transactions`, `create_transaction`, `create_transactions`, `update_transaction`, `update_transactions`, `delete_transaction`, `import_transactions` |
+| **Scheduled** | `list_scheduled_transactions`, `get_scheduled_transaction`, `create_scheduled_transaction`, `update_scheduled_transaction`, `delete_scheduled_transaction` |
 | **Analytics** | `get_money_flow`, `get_spending_by_category` |
+
+### Field selection
+
+Every tool that returns a model accepts an optional `exclude_fields` list. By
+default each tool returns a sensible subset of fields to keep token usage low.
+See [FIELDS.md](./FIELDS.md) for per-model defaults and override examples.
 
 ## Development
 

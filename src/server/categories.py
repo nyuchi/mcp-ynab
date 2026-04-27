@@ -1,30 +1,46 @@
 from src.server import _shared
 from src.server._shared import dollars_to_milliunits, serialize, serialize_list
 
+_FIELDS_DOC = (
+    "Optional list of field names to exclude from the response. "
+    "If omitted, the model's default exclude list is used (see FIELDS.md). "
+    "Pass [] to return all fields. Pass a custom list to override the default."
+)
+
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def list_categories(plan_id: str) -> str:
+async def list_categories(
+    plan_id: str, exclude_fields: list[str] | None = None
+) -> str:
     """List all categories grouped by category group.
 
     Args:
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from each category group.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     groups = await _shared.cache.get_categories(plan_id)
-    return serialize_list(groups)
+    return serialize_list(groups, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
-async def get_category(category_id: str, plan_id: str) -> str:
+async def get_category(
+    category_id: str, plan_id: str, exclude_fields: list[str] | None = None
+) -> str:
     """Get a single category. Amounts are specific to the current plan month (UTC).
 
     Args:
         category_id: The category ID
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     cat = await _shared.cache.get_category(category_id, plan_id)
-    return serialize(cat)
+    return serialize(cat, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -36,6 +52,7 @@ async def create_category(
     note: str | None = None,
     goal_target: float | None = None,
     goal_target_date: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Create a new category in a category group.
 
@@ -46,6 +63,9 @@ async def create_category(
         note: Optional note for the category
         goal_target: Optional goal target amount in dollars. If specified and no goal exists, a monthly 'Needed for Spending' goal will be created.
         goal_target_date: Optional goal target date in ISO format (e.g. '2026-12-01')
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     category: dict = {
         "category_group_id": category_group_id,
@@ -59,7 +79,7 @@ async def create_category(
         category["goal_target_date"] = goal_target_date
 
     cat = await _shared.cache.create_category(category, plan_id)
-    return serialize(cat)
+    return serialize(cat, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -72,6 +92,7 @@ async def update_category(
     category_group_id: str | None = None,
     goal_target: float | None = None,
     goal_target_date: str | None = None,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Update a category. Only provide the fields you want to change.
 
@@ -83,6 +104,9 @@ async def update_category(
         category_group_id: Move category to a different category group
         goal_target: Goal target amount in dollars. If specified and no goal exists, a monthly 'Needed for Spending' goal will be created.
         goal_target_date: Goal target date in ISO format (e.g. '2026-12-01')
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     category: dict = {}
     if name is not None:
@@ -97,7 +121,7 @@ async def update_category(
         category["goal_target_date"] = goal_target_date
 
     cat = await _shared.cache.update_category(category_id, category, plan_id)
-    return serialize(cat)
+    return serialize(cat, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -105,15 +129,19 @@ async def update_category(
 async def create_category_group(
     plan_id: str,
     name: str,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Create a new category group.
 
     Args:
         plan_id: The plan ID (use list_plans to find available IDs)
         name: The name of the category group (max 50 characters)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     group = await _shared.cache.create_category_group({"name": name}, plan_id)
-    return serialize(group)
+    return serialize(group, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
@@ -122,6 +150,7 @@ async def update_category_group(
     plan_id: str,
     category_group_id: str,
     name: str,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Update a category group.
 
@@ -129,17 +158,23 @@ async def update_category_group(
         plan_id: The plan ID (use list_plans to find available IDs)
         category_group_id: The category group ID to update
         name: New name for the category group (max 50 characters)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     group = await _shared.cache.update_category_group(
         category_group_id, {"name": name}, plan_id
     )
-    return serialize(group)
+    return serialize(group, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def get_category_for_month(
-    category_id: str, month: str, plan_id: str
+    category_id: str,
+    month: str,
+    plan_id: str,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Get category details for a specific month.
 
@@ -147,15 +182,22 @@ async def get_category_for_month(
         category_id: The category ID
         month: Month in YYYY-MM-DD format (use first of month, e.g. '2026-03-01')
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     cat = await _shared.cache.get_category_for_month(month, category_id, plan_id)
-    return serialize(cat)
+    return serialize(cat, exclude_fields=exclude_fields)
 
 
 @_shared.mcp.tool()
 @_shared.handle_errors
 async def update_category_for_month(
-    category_id: str, month: str, budgeted: float, plan_id: str
+    category_id: str,
+    month: str,
+    budgeted: float,
+    plan_id: str,
+    exclude_fields: list[str] | None = None,
 ) -> str:
     """Update the budgeted amount for a category in a specific month.
 
@@ -164,8 +206,11 @@ async def update_category_for_month(
         month: Month in YYYY-MM-DD format (use first of month, e.g. '2026-03-01')
         budgeted: Budgeted amount in dollars (e.g. 500.00)
         plan_id: The plan ID (use list_plans to find available IDs)
+        exclude_fields: Optional list of field names to exclude from the response.
+            If omitted, the model's default exclude list is used (see FIELDS.md).
+            Pass [] to return all fields. Pass a custom list to override the default.
     """
     cat = await _shared.cache.update_category_for_month(
         month, category_id, dollars_to_milliunits(budgeted), plan_id
     )
-    return serialize(cat)
+    return serialize(cat, exclude_fields=exclude_fields)

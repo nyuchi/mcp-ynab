@@ -2,7 +2,16 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
-ACCOUNT_DISPLAY_EXCLUDE: set[str] = set()
+ACCOUNT_DEFAULT_EXCLUDE: set[str] = {
+    "direct_import_linked",
+    "direct_import_in_error",
+    "last_reconciled_at",
+    "debt_original_balance",
+    "debt_interest_rates",
+    "debt_minimum_payments",
+    "debt_escrow_amounts",
+    "deleted",
+}
 
 
 class Account(YNABBaseModel):

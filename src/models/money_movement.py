@@ -2,6 +2,10 @@ from pydantic import Field
 
 from src.models.common import YNABBaseModel
 
+MONEY_MOVEMENT_DEFAULT_EXCLUDE: set[str] = set()
+
+MONEY_MOVEMENT_GROUP_DEFAULT_EXCLUDE: set[str] = set()
+
 
 class MoneyMovementGroup(YNABBaseModel):
     id: str = Field()
