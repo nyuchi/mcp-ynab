@@ -198,9 +198,16 @@ async def search_transactions(
         if not any(q in f.lower() for f in fields):
             continue
 
-        if amount_min is not None and t.amount < dollars_to_milliunits(amount_min):
+        use_abs = (
+            amount_min is not None
+            and amount_max is not None
+            and amount_min >= 0
+            and amount_max >= 0
+        )
+        amount = abs(t.amount) if use_abs else t.amount
+        if amount_min is not None and amount < dollars_to_milliunits(amount_min):
             continue
-        if amount_max is not None and t.amount > dollars_to_milliunits(amount_max):
+        if amount_max is not None and amount > dollars_to_milliunits(amount_max):
             continue
 
         matches.append(t)

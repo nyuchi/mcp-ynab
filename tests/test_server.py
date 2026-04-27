@@ -686,6 +686,47 @@ class TestSearchTransactions:
         result = json.loads(await search_transactions(plan_id="bud-1", query="nonexistent"))
         assert result == []
 
+    @pytest.mark.asyncio
+    async def test_amount_range_abs_value_when_both_positive(self, mock_cache):
+        from src.server import search_transactions
+
+        mock_cache.get_transactions = AsyncMock(return_value=[
+            _make_transaction(id="t1", payee_name="A", amount=-50000),   # outflow $50
+            _make_transaction(id="t2", payee_name="A", amount=-200000),  # outflow $200
+            _make_transaction(id="t3", payee_name="A", amount=200000),   # inflow $200
+        ])
+        result = json.loads(await search_transactions(
+            plan_id="bud-1", query="A", amount_min=10.0, amount_max=100.0
+        ))
+        assert len(result) == 1
+        assert result[0]["amount"] == -50000
+
+    @pytest.mark.asyncio
+    async def test_amount_range_signed_when_negative_bound(self, mock_cache):
+        from src.server import search_transactions
+
+        mock_cache.get_transactions = AsyncMock(return_value=[
+            _make_transaction(id="t1", payee_name="A", amount=-50000),   # outflow $50
+            _make_transaction(id="t2", payee_name="A", amount=50000),    # inflow $50
+        ])
+        result = json.loads(await search_transactions(
+            plan_id="bud-1", query="A", amount_min=-100.0, amount_max=-10.0
+        ))
+        assert len(result) == 1
+        assert result[0]["amount"] == -50000
+
+    @pytest.mark.asyncio
+    async def test_amount_range_positive_bounds_skip_outflows_outside_abs_range(self, mock_cache):
+        from src.server import search_transactions
+
+        mock_cache.get_transactions = AsyncMock(return_value=[
+            _make_transaction(id="t1", payee_name="A", amount=2000000),  # inflow $2000
+        ])
+        result = json.loads(await search_transactions(
+            plan_id="bud-1", query="A", amount_min=10.0, amount_max=100.0
+        ))
+        assert result == []
+
 
 # ── Spending By Category ─────────────────────────────────────
 
