@@ -6,6 +6,7 @@ from src.models.category import Category, CategoryGroup
 from src.models.payee import Payee
 from src.models.payee_location import PayeeLocation
 from src.models.month import MonthSummary, MonthDetail
+from src.models.money_movement import MoneyMovement, MoneyMovementGroup
 from src.models.user import User
 
 __all__ = [
@@ -23,5 +24,7 @@ __all__ = [
     "PayeeLocation",
     "MonthSummary",
     "MonthDetail",
+    "MoneyMovement",
+    "MoneyMovementGroup",
     "User",
 ]

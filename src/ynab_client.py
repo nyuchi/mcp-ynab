@@ -10,6 +10,8 @@ from src.models import (
     CategoryGroup,
     MonthDetail,
     MonthSummary,
+    MoneyMovement,
+    MoneyMovementGroup,
     Payee,
     PayeeLocation,
     ScheduledTransaction,
@@ -360,6 +362,38 @@ class YNABClient:
     ) -> list[PayeeLocation]:
         data = await self._get(f"/plans/{plan_id}/payees/{payee_id}/payee_locations")
         return [PayeeLocation.model_validate(pl) for pl in data["data"]["payee_locations"]]
+
+    # ── Money Movements ──────────────────────────────────────
+
+    async def get_money_movements(
+        self, plan_id: str, *, last_knowledge_of_server: int | None = None
+    ) -> tuple[list[MoneyMovement], int]:
+        params = self._add_knowledge(None, last_knowledge_of_server)
+        data = await self._get(f"/plans/{plan_id}/money_movements", params=params)
+        movements = [MoneyMovement.model_validate(m) for m in data["data"]["money_movements"]]
+        knowledge = data["data"]["server_knowledge"]
+        return movements, knowledge
+
+    async def get_money_movement_groups(
+        self, plan_id: str, *, last_knowledge_of_server: int | None = None
+    ) -> tuple[list[MoneyMovementGroup], int]:
+        params = self._add_knowledge(None, last_knowledge_of_server)
+        data = await self._get(f"/plans/{plan_id}/money_movement_groups", params=params)
+        groups = [MoneyMovementGroup.model_validate(g) for g in data["data"]["money_movement_groups"]]
+        knowledge = data["data"]["server_knowledge"]
+        return groups, knowledge
+
+    async def get_money_movement_groups_for_month(
+        self, month: str, plan_id: str
+    ) -> list[MoneyMovementGroup]:
+        data = await self._get(f"/plans/{plan_id}/months/{month}/money_movement_groups")
+        return [MoneyMovementGroup.model_validate(g) for g in data["data"]["money_movement_groups"]]
+
+    async def get_money_movements_for_month(
+        self, month: str, plan_id: str
+    ) -> list[MoneyMovement]:
+        data = await self._get(f"/plans/{plan_id}/months/{month}/money_movements")
+        return [MoneyMovement.model_validate(m) for m in data["data"]["money_movements"]]
 
     # ── Months ───────────────────────────────────────────────
 

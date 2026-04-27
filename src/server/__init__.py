@@ -19,6 +19,10 @@ from src.server.payees import list_payees, get_payee, update_payee
 from src.server.payee_locations import (
     list_payee_locations, get_payee_location, get_payee_locations_by_payee,
 )
+from src.server.money_movements import (
+    list_money_movements, get_money_movements_for_month,
+    list_money_movement_groups, get_money_movement_groups_for_month,
+)
 from src.server.months import list_months, get_month
 from src.server.scheduled import list_scheduled_transactions
 from src.server.analytics import get_money_flow, get_spending_by_category
@@ -36,6 +40,8 @@ __all__ = [
     "get_category_for_month", "update_category_for_month",
     "list_payees", "get_payee", "update_payee",
     "list_payee_locations", "get_payee_location", "get_payee_locations_by_payee",
+    "list_money_movements", "get_money_movements_for_month",
+    "list_money_movement_groups", "get_money_movement_groups_for_month",
     "list_months", "get_month",
     "list_scheduled_transactions",
     "get_money_flow", "get_spending_by_category",

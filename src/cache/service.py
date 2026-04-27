@@ -19,6 +19,8 @@ from src.models import (
     CategoryGroup,
     MonthDetail,
     MonthSummary,
+    MoneyMovement,
+    MoneyMovementGroup,
     Payee,
     PayeeLocation,
     ScheduledTransaction,
@@ -37,6 +39,8 @@ ENDPOINT_ACCOUNTS = "accounts"
 ENDPOINT_TRANSACTIONS = "transactions"
 ENDPOINT_CATEGORIES = "categories"
 ENDPOINT_PAYEES = "payees"
+ENDPOINT_MONEY_MOVEMENTS = "money_movements"
+ENDPOINT_MONEY_MOVEMENT_GROUPS = "money_movement_groups"
 ENDPOINT_MONTHS = "months"
 
 # Delta sync entity type keys (used for entity storage)
@@ -44,6 +48,8 @@ ENTITY_ACCOUNT = "account"
 ENTITY_TRANSACTION = "transaction"
 ENTITY_CATEGORY = "category"
 ENTITY_CATEGORY_GROUP = "category_group"
+ENTITY_MONEY_MOVEMENT = "money_movement"
+ENTITY_MONEY_MOVEMENT_GROUP = "money_movement_group"
 ENTITY_PAYEE = "payee"
 ENTITY_MONTH = "month"
 
@@ -530,6 +536,33 @@ class CacheService:
     ) -> list[PayeeLocation]:
         locations = await self.get_payee_locations(plan_id)
         return [loc for loc in locations if loc.payee_id == payee_id]
+
+    # Money Movements (delta synced)
+
+    async def get_money_movements(self, plan_id: str) -> list[MoneyMovement]:
+        return await self._delta_sync(
+            plan_id, ENDPOINT_MONEY_MOVEMENTS, ENTITY_MONEY_MOVEMENT, MoneyMovement,
+            lambda pid, **kw: self.client.get_money_movements(pid, **kw),
+        )
+
+    async def get_money_movement_groups(self, plan_id: str) -> list[MoneyMovementGroup]:
+        return await self._delta_sync(
+            plan_id, ENDPOINT_MONEY_MOVEMENT_GROUPS, ENTITY_MONEY_MOVEMENT_GROUP,
+            MoneyMovementGroup,
+            lambda pid, **kw: self.client.get_money_movement_groups(pid, **kw),
+        )
+
+    async def get_money_movement_groups_for_month(
+        self, month: str, plan_id: str
+    ) -> list[MoneyMovementGroup]:
+        groups = await self.get_money_movement_groups(plan_id)
+        return [g for g in groups if g.month == month]
+
+    async def get_money_movements_for_month(
+        self, month: str, plan_id: str
+    ) -> list[MoneyMovement]:
+        movements = await self.get_money_movements(plan_id)
+        return [m for m in movements if m.month == month]
 
     # Months (delta synced)
 
