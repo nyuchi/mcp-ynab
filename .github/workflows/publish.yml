@@ -1,19 +1,16 @@
 name: Publish to PyPI
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - "uv.lock"
+  release:
+    types: [published]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --group dev
       - run: uv run pytest
@@ -27,6 +24,16 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
       - uses: astral-sh/setup-uv@v6
+      - name: Verify release tag matches pyproject version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(grep -E '^version = ' pyproject.toml | sed -E 's/version = "(.+)"/\1/')
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Release tag '$tag' does not match pyproject.toml version '$version'"
+            exit 1
+          fi
       - run: uv build
       - uses: pypa/gh-action-pypi-publish@release/v1
