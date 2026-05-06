@@ -331,7 +331,7 @@ class YNABClient:
 
     async def create_category_group(self, category_group: dict, plan_id: str) -> CategoryGroup:
         data = await self._post(
-            f"/plans/{plan_id}/categories/groups",
+            f"/plans/{plan_id}/category_groups",
             json={"category_group": category_group},
         )
         return CategoryGroup.model_validate(data["data"]["category_group"])
