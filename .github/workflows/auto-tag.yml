@@ -1,0 +1,35 @@
+name: Auto tag
+
+# Releasing is a version bump merged to main; nobody pushes a tag by hand.
+# When CI passes on main, this reads the version and, if `v<version>`
+# is not tagged yet, pushes that tag and publishes a GitHub release
+# with the RELEASE_BUMP_TOKEN org secret, which starts publish.yml (tests, then PyPI).
+# A merge that does not change the version finds its tag already there and
+# does nothing. (GitHub starts no workflow from a tag or release made with
+# GITHUB_TOKEN; that is why the PAT is used.)
+#
+# The logic is nyuchi/.github's reusable-auto-tag.yml.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    uses: nyuchi/.github/.github/workflows/reusable-auto-tag.yml@main
+    with:
+      version-command: "grep -m1 -E '^version = ' pyproject.toml | cut -d'\"' -f2"
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      create-release: true
+    secrets:
+      token: ${{ secrets.RELEASE_BUMP_TOKEN }}
