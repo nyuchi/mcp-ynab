@@ -10,12 +10,26 @@ name: Auto tag
 #
 # The logic is nyuchi/.github's reusable-auto-tag.yml.
 
+# Versioning policy (nyuchi/.github#80): a release to main is the next
+# MINOR above the highest tag, and the version file must say so (the run
+# fails and names the right version otherwise); merges into staging are
+# tagged as patches by staging-version.yml; a MAJOR only by hand, from the
+# Actions tab with bump: major. Each segment holds 0..999.
+
 on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      bump:
+        description: >-
+          Versioning policy override. main releases the next minor; a major
+          is only ever made by hand, here.
+        type: choice
+        options: [minor, patch, major]
+        default: minor
 
 permissions:
   contents: read
@@ -26,9 +40,10 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push')
-    uses: nyuchi/.github/.github/workflows/reusable-auto-tag.yml@b0402fdd3b590fa6c6774ea81c4e8cc21a4cf6cb  # main 2026-10-04
+    uses: nyuchi/.github/.github/workflows/reusable-auto-tag.yml@924e5b4d0983d31379aedbec02b990793f29c792  # main, 2026-10-04
     with:
       version-command: "grep -m1 -E '^version = ' pyproject.toml | cut -d'\"' -f2"
+      bump: ${{ inputs.bump || '' }}
       ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       create-release: true
     secrets:
