@@ -68,3 +68,13 @@ Considered `@cloudflare/sandbox` for this instead of using `@cloudflare/containe
 - **Milliunits:** YNAB stores money as milliunits (1000 = $1.00). The Python server accepts dollars in tool parameters and converts to milliunits internally.
 - **Month format:** YNAB months use first-of-month dates (`2026-03-01` for March 2026).
 - **Dependency bounds:** runtime deps in `pyproject.toml` carry upper bounds. An unbounded `mcp[cli]>=1.26.0` broke every fresh install when the SDK shipped 2.0.0 (#21). `uv run pytest` uses `uv.lock` and cannot catch this class of break; `python scripts/smoke_test.py` resolves fresh from the declared constraints and can. Run it before releasing, and after touching any dependency.
+
+## Track big work in GitHub issues
+
+Any substantial build, migration, investigation or multi-step task gets a GitHub issue in the repo that owns it — before or as work starts — so another session, agent or person can pick it up.
+
+- The issue holds the goal, the owner's decisions (verbatim where given), the plan, acceptance criteria, owner-only steps and links.
+- Every PR references its issue (`Refs #n`; `Fixes #n` only when the merge completes it).
+- Post progress, decisions and a hand-off note (what's done, what's left, branch names) as issue comments — at each merge and before a session or agent finishes.
+- Work spanning repos gets a tracking issue that links the per-repo issues.
+- Never put secrets, credential status or exploitable detail in issues on public repos.
