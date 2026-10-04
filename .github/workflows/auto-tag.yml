@@ -26,7 +26,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push')
-    uses: nyuchi/.github/.github/workflows/reusable-auto-tag.yml@main
+    uses: nyuchi/.github/.github/workflows/reusable-auto-tag.yml@b0402fdd3b590fa6c6774ea81c4e8cc21a4cf6cb  # main 2026-10-04
     with:
       version-command: "grep -m1 -E '^version = ' pyproject.toml | cut -d'\"' -f2"
       ref: ${{ github.event.workflow_run.head_sha || github.sha }}
