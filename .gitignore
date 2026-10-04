@@ -28,3 +28,6 @@ worker/site/.astro/
 # Wrangler (worker/)
 .wrangler/
 worker/.dev.vars
+
+# macOS Finder metadata
+.DS_Store
