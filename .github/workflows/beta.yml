@@ -36,8 +36,9 @@ jobs:
     defaults:
       run:
         working-directory: worker
-    # The Cloudflare secrets reach the wrangler step alone, never `npm ci` or
-    # the site build, where a dependency lifecycle script could read them.
+    # The Cloudflare secrets reach the wrangler step alone, not the environment
+    # of `npm ci` or the site build. That narrows exposure; it does not stop a
+    # compromised dependency that tampers with the local wrangler.
     steps:
       - name: Cloudflare token configured
         id: cf
