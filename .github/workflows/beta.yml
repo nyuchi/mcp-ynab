@@ -36,37 +36,45 @@ jobs:
     defaults:
       run:
         working-directory: worker
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    # The Cloudflare secrets reach the wrangler step alone, never `npm ci` or
+    # the site build, where a dependency lifecycle script could read them.
     steps:
-      - name: No Cloudflare token
-        if: env.CLOUDFLARE_API_TOKEN == ''
+      - name: Cloudflare token configured
+        id: cf
         working-directory: .
-        run: echo "::notice::CLOUDFLARE_API_TOKEN is not set; no beta upload."
+        env:
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" = true ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set; no beta upload."
+          fi
 
       - uses: actions/checkout@v4
-        if: env.CLOUDFLARE_API_TOKEN != ''
+        if: steps.cf.outputs.ok == 'true'
         with:
           persist-credentials: false
 
       - uses: actions/setup-node@v4
-        if: env.CLOUDFLARE_API_TOKEN != ''
+        if: steps.cf.outputs.ok == 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: worker/package-lock.json
 
-      - if: env.CLOUDFLARE_API_TOKEN != ''
+      - if: steps.cf.outputs.ok == 'true'
         run: npm ci
 
       # The assets binding serves worker/site/dist; build it as Workers Builds does.
-      - if: env.CLOUDFLARE_API_TOKEN != ''
+      - if: steps.cf.outputs.ok == 'true'
         run: npm run build:site
 
       - name: wrangler preview --name staging
-        if: env.CLOUDFLARE_API_TOKEN != ''
+        if: steps.cf.outputs.ok == 'true'
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SHA: ${{ github.sha }}
         run: |
           set -o pipefail
