@@ -6,6 +6,10 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
+[options]
+exclude-newer = "2026-11-08T13:51:26.466166Z"
+exclude-newer-span = "P7D"
+
 [manifest]
 overrides = [
     { name = "certifi", specifier = ">=2026.10.18" },

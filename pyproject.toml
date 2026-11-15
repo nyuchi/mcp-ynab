@@ -57,6 +57,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv]
+# A new package release waits seven days before uv resolves it, so a hijacked
+# release has time to be caught and pulled first (the org's cooldown rule).
+exclude-newer = "7 days"
 # Security floors for transitives Dependabot flagged (2026-11-15): certifi
 # critical, opentelemetry-api medium. Floors only; every cap above still holds.
 override-dependencies = [
