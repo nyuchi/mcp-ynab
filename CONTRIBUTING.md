@@ -11,7 +11,10 @@ If you are reading this for the first time, also read:
 
 - [`CODE_OF_CONDUCT.md`](https://github.com/nyuchi/.github/blob/main/CODE_OF_CONDUCT.md) — how we treat each
   other.
-- [`SECURITY.md`](https://github.com/nyuchi/.github/blob/main/SECURITY.md) — how to report vulnerabilities. - [`SUPPORT.md`](https://github.com/nyuchi/.github/blob/main/SUPPORT.md) — where to get help. - [`AGENTS.md`](https://github.com/nyuchi/.github/blob/main/AGENTS.md) — rules for AI-assisted contributions. Everything in this file still applies; `AGENTS.md` adds
+- [`SECURITY.md`](https://github.com/nyuchi/.github/blob/main/SECURITY.md) — how to report vulnerabilities.
+- [`SUPPORT.md`](https://github.com/nyuchi/.github/blob/main/SUPPORT.md) — where to get help.
+- [`AGENTS.md`](https://github.com/nyuchi/.github/blob/main/AGENTS.md) — rules for AI-assisted contributions.
+  Everything in this file still applies; `AGENTS.md` adds
   agent-specific behaviour on top.
 
 ---
@@ -41,13 +44,24 @@ Every commit and every PR title on every repo in the org must follow
 
 ### Allowed types
 
-| Type   | Use for                     |
-| ------ | --------------------------- |
-| `feat` | A user-visible new feature. |     | `fix` | A user-visible bug fix. |     | `perf` | A change that improves performance. |     | `refactor` | A code change that is neither a fix nor a feature. |     | `docs` | Documentation only. |     | `test` | Adding or correcting tests. |     | `build` | Build system, packaging, bundlers, dependencies. |     | `ci` | CI configuration, workflows, GitHub Actions. |     | `chore` | Maintenance that doesn't fit above. |     | `revert` | Reverting a previous commit. |     | `style` | Formatting only; no logic change. |
+| Type       | Use for                                            |
+| ---------- | -------------------------------------------------- |
+| `feat`     | A user-visible new feature.                        |
+| `fix`      | A user-visible bug fix.                            |
+| `perf`     | A change that improves performance.                |
+| `refactor` | A code change that is neither a fix nor a feature. |
+| `docs`     | Documentation only.                                |
+| `test`     | Adding or correcting tests.                        |
+| `build`    | Build system, packaging, bundlers, dependencies.   |
+| `ci`       | CI configuration, workflows, GitHub Actions.       |
+| `chore`    | Maintenance that doesn't fit above.                |
+| `revert`   | Reverting a previous commit.                       |
+| `style`    | Formatting only; no logic change.                  |
 
 ### Breaking changes
 
-Indicate breaking changes **either** with a `!` after the type/scope **or** with a `BREAKING CHANGE:` footer:
+Indicate breaking changes **either** with a `!` after the type/scope
+**or** with a `BREAKING CHANGE:` footer:
 
 ```
 feat(api)!: drop support for Node 18
@@ -77,7 +91,8 @@ package or module name (`feat(ui): …`, `fix(ntl/transport): …`).
 
 Every commit merged to `main` on every repo **must be signed and
 verified by GitHub**. This is policy, not a ruleset: the org ruleset
-(see [`ORG_SETTINGS.md`](https://github.com/nyuchi/.github/blob/main/ORG_SETTINGS.md)) has no `required_signatures` rule, so reviewers check it.
+(see [`ORG_SETTINGS.md`](https://github.com/nyuchi/.github/blob/main/ORG_SETTINGS.md))
+has no `required_signatures` rule, so reviewers check it.
 
 Either **GPG** or **SSH** signing is accepted. Configure once:
 
@@ -105,7 +120,8 @@ By contributing, you certify that you wrote the code (or have the
 right to submit it) under the terms of the
 [Developer Certificate of Origin 1.1][dco].
 
-**Every commit must include a `Signed-off-by` trailer.** The easiest way is `git commit -s`, which appends:
+**Every commit must include a `Signed-off-by` trailer.** The easiest
+way is `git commit -s`, which appends:
 
 ```
 Signed-off-by: Your Name <you@example.com>
@@ -115,14 +131,16 @@ The email must match the email on your Git config. The DCO check
 runs on every PR and blocks merges if any commit is missing the
 trailer.
 
-> Signing (`-S`) and signing-off (`-s`) are **different things**. You > need both. Use `git commit -s -S` (or set `commit.gpgsign = true`
+> Signing (`-S`) and signing-off (`-s`) are **different things**. You
+> need both. Use `git commit -s -S` (or set `commit.gpgsign = true`
 > and pass `-s`).
 
 ---
 
 ## Branch naming
 
-Branches in org repos follow `<type>/<short-kebab-description>` where `<type>` is one of the Conventional Commit types above. Examples:
+Branches in org repos follow `<type>/<short-kebab-description>` where
+`<type>` is one of the Conventional Commit types above. Examples:
 
 ```
 feat/login-mfa
@@ -134,7 +152,9 @@ refactor/extract-session-store
 
 Additional reserved prefixes:
 
-- `release/<version>` — release prep branches. - `hotfix/<short-desc>` — urgent production fixes. - `claude/<topic>-<suffix>` — branches created by Claude Code
+- `release/<version>` — release prep branches.
+- `hotfix/<short-desc>` — urgent production fixes.
+- `claude/<topic>-<suffix>` — branches created by Claude Code
   assistants. Treat these like any other branch; they still need
   signed commits, DCO, and a Conventional Commit PR title.
 
@@ -173,7 +193,8 @@ the rest is policy:
 - [x] Conventional Commits PR title (lint passes).
 - [x] All commits signed and verified.
 - [x] DCO sign-off on every commit.
-- [x] All required CI checks green (the five `lint / …` checks, plus any `repo-ci` checks the repository adds).
+- [x] All required CI checks green (the five `lint / …` checks, plus
+      any `repo-ci` checks the repository adds).
 - [x] No unresolved review comments.
 - [x] Up to date with the base branch.
 
@@ -203,7 +224,8 @@ Every release follows the org policy
   `bump: major`. Automation never makes one.
 - Minor and patch have no upper limit: patch 999 is followed by patch
   1000, minor 999 by minor 1000. Only a major is manual.
-- `workflow_dispatch` on a release workflow takes `bump: patch|minor|major` as a manual override.
+- `workflow_dispatch` on a release workflow takes
+  `bump: patch|minor|major` as a manual override.
 
 There are no version labels. Released versions are never renumbered.
 The calculator is
@@ -218,7 +240,8 @@ rustfmt/clippy, ruff/mypy, clang-format, etc.). We do not document
 style rules here — the config files in each repo are the source of
 truth.
 
-- **Do not disable checks** (`eslint-disable`, `# type: ignore`, `#[allow(...)]`) without a comment explaining _why_ on the same
+- **Do not disable checks** (`eslint-disable`, `# type: ignore`,
+  `#[allow(...)]`) without a comment explaining _why_ on the same
   line.
 - **Do not commit generated or secret files.** `.env`, build
   artifacts, lockfiles for libraries, etc.
@@ -289,7 +312,8 @@ When you contribute:
 ## Security and the Code of Conduct
 
 - **Vulnerability?** Do not open a public issue. Follow
-  [`SECURITY.md`](https://github.com/nyuchi/.github/blob/main/SECURITY.md). - **Behavior issue?** See [`CODE_OF_CONDUCT.md`](https://github.com/nyuchi/.github/blob/main/CODE_OF_CONDUCT.md)
+  [`SECURITY.md`](https://github.com/nyuchi/.github/blob/main/SECURITY.md).
+- **Behavior issue?** See [`CODE_OF_CONDUCT.md`](https://github.com/nyuchi/.github/blob/main/CODE_OF_CONDUCT.md)
   for how to report, and what we'll do.
 
 ---
