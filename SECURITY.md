@@ -72,8 +72,7 @@ When you report a vulnerability in good faith, we commit to:
   repositories.
 - Build and release infrastructure controlled by the organization
   (GitHub Actions workflows, release artifacts).
-- Production services at `nyuchi.com`, `mukoko.com`, `siafudb.org`,
-  `travel-info.co.zw`, `barstool.co.zw`, and related subdomains.
+- Production services at `nyuchi.com`, `mukoko.com`, `siafudb.org`, `travel-info.co.zw`, `barstool.co.zw`, and related subdomains.
 
 ### Out of scope
 
