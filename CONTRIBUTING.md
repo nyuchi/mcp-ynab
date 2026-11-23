@@ -170,7 +170,7 @@ No personal names, no ticket-number-only branches.
 - Rebase onto the latest default branch; do not merge the default
   branch into your feature branch.
 - Run the repo's local checks (`pnpm test`, `cargo test`, `uv run
-pytest`, etc.) and make sure they pass.
+  pytest`, etc.) and make sure they pass.
 - If your change is user-visible, update the relevant docs in the
   same PR.
 
