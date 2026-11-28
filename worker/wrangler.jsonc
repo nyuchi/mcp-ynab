@@ -100,10 +100,7 @@
   // which requires its own proxied DNS record already at that hostname.
   "routes": [{ "pattern": "ynab.nyuchi.com", "custom_domain": true }],
 
-  // Worker Previews: the staging beta (nyuchi/.github#84). Every push to
-  // `staging` runs `wrangler preview --name staging`
-  // (.github/workflows/beta.yml), served at
-  //   https://staging-mcp-ynab.nyuchi.workers.dev
+  // Worker Previews (`wrangler preview`, run by hand; nothing in CI runs it).
   // Previews inherit NOTHING from the top level, so everything is repeated
   // here against the SAME production resources (owner rule: no staging data
   // stores). Cloudflare gives each Preview its own Durable Object namespace

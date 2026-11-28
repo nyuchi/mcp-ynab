@@ -217,9 +217,10 @@ That rises to 1 when a second engineer with merge rights joins.
 Every release follows the org policy
 ([#80](https://github.com/nyuchi/.github/issues/80)):
 
-- **A merge into `staging` is a PATCH** (x.y.z → x.y.z+1). It is tagged
-  automatically and deployed to the repo's live beta.
-- **Releasing `staging` to `main` is a MINOR** (x.y.z → x.y+1.0).
+- **Trunk-based, `main` only.** There is no `staging` branch.
+- **A merge to `main` titled `fix:`, `chore:`, `docs:` or `ci:` is a
+  PATCH** (x.y.z → x.y.z+1). It is tagged automatically.
+- **A merge to `main` titled `feat:` is a MINOR** (x.y.z → x.y+1.0).
 - **A MAJOR is manual only**: the owner runs the release workflow with
   `bump: major`. Automation never makes one.
 - Minor and patch have no upper limit: patch 999 is followed by patch

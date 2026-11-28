@@ -12,8 +12,7 @@ name: Auto tag
 
 # Versioning policy (nyuchi/.github#80): a release to main is the next
 # MINOR above the highest tag, and the version file must say so (the run
-# fails and names the right version otherwise); merges into staging are
-# tagged as patches by staging-version.yml; a MAJOR only by hand, from the
+# fails and names the right version otherwise); a MAJOR only by hand, from the
 # Actions tab with bump: major. Each segment holds 0..999.
 
 on:

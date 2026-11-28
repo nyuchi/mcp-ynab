@@ -308,11 +308,9 @@ unbounded. See `CLAUDE.md` for the day-to-day commands.
 ## Versioning
 
 Releases follow the org versioning policy
-([nyuchi/.github#80](https://github.com/nyuchi/.github/issues/80)). The
-branch decides the bump, and there are no version labels:
+([nyuchi/.github#80](https://github.com/nyuchi/.github/issues/80)). There
+are no version labels:
 
-- **A merge into `staging`** (the live beta) is tagged as the next
-  **patch** automatically, by `staging-version.yml`.
 - **A release to `main`** is the next **minor** above the highest tag. The
   PR that releases sets `version` in `pyproject.toml` to it. CI refuses any other version
   and names the right one.
